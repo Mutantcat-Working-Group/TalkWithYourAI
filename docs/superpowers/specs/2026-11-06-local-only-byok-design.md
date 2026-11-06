@@ -2,7 +2,7 @@
 
 Date: 2026-11-06
 Status: Awaiting user review of written spec
-Scope: 整个桌面应用(前端 `src/` + Rust `src-tauri/`)、Tauri 配置、i18n、测试、CI 无关
+Scope: 整个桌面应用(前端 `src/` + Rust `src-tauri/`)、Tauri 配置、i18n、测试,以及 `.github/`、`scripts/`、仓库文档的清理
 Base revision: `f5ad602`(与上游 `tover0314-w/opentypeless` 完全一致,0 差异)
 
 ## 1. 目标
@@ -19,6 +19,8 @@ Base revision: `f5ad602`(与上游 `tover0314-w/opentypeless` 完全一致,0 差
 - **不做离线推理。** 本项目不引入 whisper.cpp、本地大模型权重下载或离线 STT 引擎。用户选择了「自带 key,仍可联网调用各家 API」这一路径:出网流量到用户自己配置的服务商为止。
 - **不做上游同步。** 用户明确表示不再跟随 `tover0314-w/opentypeless`,因此不追求最小 diff,允许与上游产生大范围冲突。
 - **不做本地整机配置导出/导入。** 见 §7.3。
+- **不保留上游多语言门面。** 17 份非中英语言 README 删除,不提供替代翻译,只维护中英两份(§5.6)。
+- **不新增发版流水线。** 本仓库没有发布 workflow,本次只改 updater endpoint 与署名,发版流程是独立后续任务(§8)。
 - **不改动** 听写、Ask、翻译、应用感知、词库、热键、托盘、辅助功能等本地功能的行为。
 
 ## 3. 已确认决策
@@ -31,6 +33,10 @@ Base revision: `f5ad602`(与上游 `tover0314-w/opentypeless` 完全一致,0 差
 | 设置界面结构 | 保留「语音识别」+「AI 润色」两个面板,仅移除其中的 cloud 分支 |
 | 自动更新 | 保留 updater 机制,endpoint 改为本仓库 releases |
 | 引导页 | 8 步精简为 6 步,删除「账号」与「模式选择」 |
+| 旧名清理范围 | 应用本身 + 仓库门面 + 上游内部文档全部清理,不留旧名;唯一例外是 MIT 署名(§12) |
+| 仓库门面 | 19 份语言 README 只保留 `README.md` 与 `README_zh.md`,其余 17 份删除;上游捐款链接与发布设施删除;`handoff.md` 删除 |
+| 上游内部文档 | `docs/` 与 `docs/superpowers/` 中的上游文档全删,仅保留本次这份 spec |
+| 词典文件格式标识 | 改名为 `talkwithyourai_dictionary`,同时兼容读取旧标识 |
 
 ## 4. 目标身份
 
@@ -52,6 +58,15 @@ Base revision: `f5ad602`(与上游 `tover0314-w/opentypeless` 完全一致,0 差
 | 托盘 / 用户可见文案中的品牌名 | `OpenTypeless` | `TalkWithYourAI` |
 | 词典 / 场景导出文件名前缀 | `opentypeless-*` | `talkwithyourai-*` |
 | `package.json` → `name` / `repository` / `homepage` / `author` / `version` | 上游信息 | 本仓库信息 |
+| `src-tauri/src/lib.rs` → tracing 过滤器默认指令 | `opentypeless=debug` | `talkwithyourai=debug` |
+| `src-tauri/src/lib.rs` → 托盘 tooltip 与启动日志 | `OpenTypeless` | `TalkWithYourAI` |
+| `index.html` → `<title>` | 含上游名 | `TalkWithYourAI` |
+| `.github/CODEOWNERS` | `@tover0314-w` | Mutantcat 团队账号或删除该文件 |
+| `.github/workflows/*.yml` → 临时目录名 | `opentypeless-packaging-tools` 等 | `talkwithyourai-*` |
+| `.github/scripts/*` → 打包守卫内部标识 | `.opentypeless-linuxdeploy-*`、`OpenTypeless.AppDir`、`OpenTypeless.AppImage` | 同步改名,**两侧必须一致**(见 §5.6) |
+| `scripts/create-labels.sh` → 目标仓库 | `tover0314-w/opentypeless` | 删除该脚本(§5.6) |
+
+**跟踪日志过滤器是功能性改动,不是文案**:crate 改名后模块路径随之变化,若不同步修改 `opentypeless=debug` 这一 EnvFilter 指令,`RUST_LOG` 调试输出会静默失效。
 
 `package.json` 的 `version` 与 `Cargo.toml` 的 `version` 必须保持同值(当前均为 `1.1.64`);`src/lib/constants.ts` 的 `APP_VERSION` 开发期回退值 `v1.1.61` 一并校正为与二者一致。
 
@@ -148,6 +163,42 @@ Base revision: `f5ad602`(与上游 `tover0314-w/opentypeless` 完全一致,0 差
 - 新增:旧配置回退用例(§7.1),Rust 侧 `AppConfig` 反序列化含 `managed_stt_capability_state` / `stt_provider: "cloud"` 的 JSON 时落到合法默认值。
 - 目标状态:`npx vitest run` 与 `cargo test` 全绿,且不存在 `#[ignore]` 新增项。
 
+### 5.6 仓库门面与文档清理
+
+用户要求旧名与上游设施彻底清理,因此除应用本身之外,以下内容一并处理。
+
+**删除:**
+
+| 目标 | 原因 |
+| --- | --- |
+| `README_ar/de/es/fr/hi/id/it/ja/ko/nl/pl/pt/ru/th/tr/vi.md`(17 份) | 只保留中英两份,其余为上游多语言门面 |
+| `handoff.md` | 上游作者的开发交接笔记,内含其本地路径 `/Users/bytedance/...`,与本仓库无关 |
+| `.github/FUNDING.yml` | `buy_me_a_coffee: opentypeless` 是**上游作者的收款链接**,保留等于替上游募捐 |
+| `.github/workflows/welcome.yml` | 欢迎语指向上游 issues 与 CONTRIBUTING |
+| `scripts/create-labels.sh` | 硬编码 `REPO="tover0314-w/opentypeless"`,会往上游仓库建标签 |
+| `.github/scripts/import-linux-gpg-key.sh` | 仅服务上游 Linux 发版签名 |
+| `.github/scripts/import-windows-certificate.ps1` | 仅服务上游 Windows 发版签名 |
+| `.github/scripts/publish-signpath-windows-release.ps1` | 内含 `gh release create --repo tover0314-w/opentypeless`,直接对上游发布 |
+| `.github/scripts/upload-linux-verification-artifacts.sh` | 内含 `--repo tover0314-w/opentypeless`,上传到上游 |
+| `docs/` 下 52 份上游设计与发版文档 | 含 cloud 用量、typeless 竞品对比、上游发版说明等 |
+| `docs/superpowers/plans/` 与 `specs/` 中的上游文档 | 清空,仅保留本 spec |
+| `docs/images/website.png`、`website-hero.png`、`website-how-it-works.png` | 上游官网营销截图 |
+| `docs/images/desktop-upgrade-lifetime.png` | 展示已删除的升级页 |
+| `docs/images/demo.gif` | 没有任何 README 引用 |
+
+**保留但需改写(去除上游仓库引用与已删功能章节):**
+
+- `README.md`、`README_zh.md`:删掉云服务 / 订阅 / 账号相关章节与截图、上游 Star 与 Discord 徽章、上游 Release 徽章;保留 fork 署名(§12);注明多语言 README 已移除。
+- `CONTRIBUTING.md`、`SECURITY.md`、`SUPPORT.md`、`VISION.md`:重写为指向本仓库;`VISION.md` 中「隐私优先 / BYOK / 无强制云账号」表述与本改造方向一致,保留并补上「应用自身不含后端依赖」。
+- `.github/CODEOWNERS`:改为 Mutantcat 团队账号;若暂无团队账号则删除该文件。
+- `.github/ISSUE_TEMPLATE/config.yml`:删除指向上游 discussions 的两个链接。
+- `docs/images/` 其余截图:`app-main-light.png`、`app-settings.png`、`app-history.png`、`onboarding-stt.png`、`v1.1.49-*.jpg`、`voice-flow-demo.gif`。**实施时必须逐张打开确认**,任何露出账号入口 / 升级入口 / 云服务选项的截图一律删除,并去掉 README 中的对应引用 —— 不允许用改造前的界面截图冒充改造后的界面。
+
+**保留不动:**
+
+- `.github/workflows/ci.yml`、`codeql.yml`、`labeler.yml`、`lock-threads.yml`、`pr-title.yml`、`stale.yml`、`typos.yml`、`check-notarization.yml`、`.github/dependabot.yml`、`.github/PULL_REQUEST_TEMPLATE.md`、`.github/labeler.yml`、`.gitignore`、`.gitattributes`、`.editorconfig`、`.typos.toml`、`.prettierrc`、`eslint.config.js`、`tsconfig*.json`、`vite.config.ts`、`vitest.config.ts`、`.vscode/`。`check-notarization.yml` 虽与发版相关,但不含上游引用,是手动触发的公证状态查询工具,保留。
+- `.github/scripts/` 中**被 `ci.yml` 依赖**的 5 个打包守卫脚本必须保留:`test-linux-appimage-packaging.sh`、`prepare-linuxdeploy-wrapper.sh`、`linuxdeploy-exclude-wrapper.rs`、`linuxdeploy-plugin-appimage-exclude-wrapper.sh`、`verify-appimage-runtime-libraries.sh`。`ci.yml` 会执行 `test-linux-appimage-packaging.sh` 与 `prepare-linuxdeploy-wrapper.sh`,删除会导致 CI 失败。这 5 个脚本只做内部标识改名:`.opentypeless-linuxdeploy-*` → `.talkwithyourai-linuxdeploy-*`,以及测试夹具名 `OpenTypeless.AppDir` / `OpenTypeless.AppImage` → `TalkWithYourAI.AppDir` / `TalkWithYourAI.AppImage`。**改名必须两侧同步**:`linuxdeploy-exclude-wrapper.rs` 中 `OsString::from("OpenTypeless.AppDir")` 是断言期望值,`test-linux-appimage-packaging.sh` 中同名变量是实际传入值,只改一侧会让该守卫用例失败。
+
 ## 6. 保留清单
 
 以下能力不做行为改动:
@@ -187,6 +238,20 @@ identifier、`productName`、keyring 服务名、数据库文件名同时变更,
 账号页删除后,`restore_backup_data` 失去全部调用方(`src/lib/tauri.ts` 是唯一入口,且只被账号页的云备份下载流程使用),因此整条路径删除,包含 `commands/backup.rs`。
 
 未来若要恢复数据可携带性,正确的形态是**本地文件导出 / 导入**(导出为 JSON,由用户自己选择保存位置),而不是任何云端备份。该能力**不在本次范围内**,不做实现。
+
+### 7.4 词典文件格式标识改名(需双向兼容)
+
+`src-tauri/src/dictionary_io.rs` 中有两处 `opentypeless_dictionary` 并非品牌文案,而是**用户可见的文件格式标识**:
+
+- `CSV_MARKER = "# opentypeless_dictionary"`(CSV 首行标记)
+- JSON 载荷中的 `"format": "opentypeless_dictionary"`
+
+按「不留旧名」的要求改名为 `talkwithyourai_dictionary`,但**必须同时兼容读取旧标识**,否则旧版导出的词典文件将无法导入:
+
+- 导出:只写新标识 `talkwithyourai_dictionary`。
+- 导入:`talkwithyourai_dictionary` 与 `opentypeless_dictionary` 均接受,后者视为旧版格式正常解析。
+- 测试:新增用例覆盖「导入旧标识 CSV」与「导入旧标识 JSON」两条路径,并断言导出产物只含新标识。
+- 该旧标识字符串是本设计中**唯一允许以字面量形式保留旧名的地方**,需在代码处加注释说明其为向后兼容的格式标记,避免后续被当作残留清理掉。
 
 ## 8. 自动更新
 
@@ -244,7 +309,7 @@ MIT 许可证要求保留原版权声明,因此:
 - `LICENSE`(MIT,Copyright 归原作者)与 `THIRD_PARTY_NOTICES.md` **原样保留**。
 - `README.md` 增加一行 fork 说明,注明本项目基于 `tover0314-w/opentypeless` 修改。
 - README 中的云服务、订阅、账号相关章节删除或改写;上游链接类内容(Star、Discord、Release 徽章)按品牌改名相应处理。
-- 10 份多语言 README 的同步改写**不在本次范围内**;本次只保证 `README.md` 与 `README_zh.md` 与实际行为一致,其余语言文件保留原样并在 README 中标注为上游内容。这一取舍需在实施时于提交信息中说明,避免被误认为遗漏。
+- 17 份非中英语言 README 按 §5.6 **删除**,不做改名保留,也不在本仓库内提供替代翻译;此后只维护 `README.md` 与 `README_zh.md` 两份。`README.md` 需在其中注明多语言版本已随上游内容一并移除。
 
 ## 13. 验证
 
@@ -258,7 +323,14 @@ MIT 许可证要求保留原版权声明,因此:
 6. `cargo clippy --all-targets -- -D warnings` —— 仓库 CI 使用严格 Clippy。
 7. `npm run build` —— 前端产物构建成功。
 8. `cargo build`(debug)—— Rust 侧编译通过(首次编译耗时较长,含 bundled SQLite)。
-9. 全仓检索确认残留:`www.opentypeless.com`、`api_base_url`、`SessionTokenStore`、`managed_`、`authStore`、`hasManagedCloudAccess`、`opentypeless.db`、`tauri-plugin-deep-link` 均无命中(文档与许可声明除外,它们按 §12 保留)。
+9. **残留审计(旧名 + 上游后端)**,逐条确认:
+   - 代码中不得命中:`www.opentypeless.com`、`api_base_url`、`SessionTokenStore`、`managed_stt`、`cloud_request`、`authStore`、`hasManagedCloudAccess`、`cloud-session`、`tauri-plugin-deep-link`、`opentypeless.db`、`OPEN_TYPELESS`。
+   - 全仓(含 `README*`、`.github/`、`scripts/`、`docs/`)不得命中字面量 `OpenTypeless` / `opentypeless`,**唯一豁免**是下面这份白名单:
+     - `LICENSE` 与 `THIRD_PARTY_NOTICES.md` 中的原版权声明(§12)。
+     - `README.md` / `README_zh.md` 中的一行 fork 出处说明(§12)。
+     - `src-tauri/src/dictionary_io.rs` 中作为向后兼容格式标记的旧标识 `opentypeless_dictionary`(§7.4)。
+     - `package-lock.json` 中来自 npm 依赖的包名或 URL 佐证(若确有依赖来源含该字符串,需在提交信息中说明具体来源,不允许整文件豁免)。
+   - 白名单以外的任何命中都视为未完成。
 10. i18n key 一致性脚本:10 份 locale 的 key 集合完全一致,且不含 §5.3 列出的 key 树。
 
 **无法在本机完成的验证(需真机,明确记录为未验证项):**
@@ -277,8 +349,10 @@ MIT 许可证要求保留原版权声明,因此:
 3. **引导页与设置面板收窄**。
 4. **品牌替换**(§4)与 Tauri 配置 / 依赖 / 权限调整。
 5. **i18n 清理与一致性校验**。
-6. **README 与许可署名处理**。
-7. **全量验证**(§13)。
+6. **词典格式标识改名与双向兼容**(§7.4)。
+7. **仓库门面与上游文档清理**(§5.6),含打包守卫脚本的同步改名。
+8. **README 与许可署名处理**(§12)。
+9. **全量验证与残留审计**(§13)。
 
 每一步独立可验证,便于在任一步骤失败时定位问题范围。
 
@@ -292,6 +366,10 @@ MIT 许可证要求保留原版权声明,因此:
 | 换 identifier 后旧用户数据「消失」 | 用户误以为数据丢失 | README 明确写出两个应用互相独立及迁移步骤(§7.2) |
 | 上游 `pubkey` 未替换即发版 | 更新下载必然签名校验失败 | README 与 §8 明确标注为首次发版前必做项 |
 | 仓库无发版流水线 | 改完 endpoint 也无法产出 `latest.json` | 明确列为独立后续任务,不在本范围内假装完成 |
+| `.github/scripts/` 中 5 个脚本被 `ci.yml` 依赖 | 误删会使 CI 的 Linux 打包守卫任务失败 | §5.6 已明确区分「发布专用(删)」与「打包守卫(留)」两组,删除前先核对 `ci.yml` 的调用点 |
+| 打包守卫夹具改名只改一侧 | `test-linux-appimage-packaging.sh` 断言与实际参数不匹配,守卫用例失败 | 改名必须同时覆盖 `linuxdeploy-exclude-wrapper.rs` 的 `OsString::from("OpenTypeless.AppDir")` 期望值与 shell 侧传入值,改完立即跑该守卫用例 |
+| README 截图仍显示账号 / 升级入口 | 用改造前的界面冒充改造后的产品 | §5.6 要求逐张打开确认,露出的截图删除并去掉引用 |
+| 残留审计白名单被过度使用 | 旧名残留被当成「例外」放过 | §13 第 9 步把白名单限定为 4 条具体位置,并禁止整文件豁免(如 `package-lock.json`) |
 
 ## 16. 审批
 
