@@ -37,6 +37,7 @@ Base revision: `f5ad602`(与上游 `tover0314-w/opentypeless` 完全一致,0 差
 | 仓库门面 | 19 份语言 README 只保留 `README.md` 与 `README_zh.md`,其余 17 份删除;上游捐款链接与发布设施删除;`handoff.md` 删除 |
 | 上游内部文档 | `docs/` 与 `docs/superpowers/` 中的上游文档全删,仅保留本次这份 spec |
 | 词典文件格式标识 | 改名为 `talkwithyourai_dictionary`,同时兼容读取旧标识 |
+| 应用图标 | 用用户提供、位于仓库根的 `icon.png` 替换全套应用图标(§4.1) |
 
 ## 4. 目标身份
 
@@ -67,6 +68,37 @@ Base revision: `f5ad602`(与上游 `tover0314-w/opentypeless` 完全一致,0 差
 | `scripts/create-labels.sh` → 目标仓库 | `tover0314-w/opentypeless` | 删除该脚本(§5.6) |
 
 **跟踪日志过滤器是功能性改动,不是文案**:crate 改名后模块路径随之变化,若不同步修改 `opentypeless=debug` 这一 EnvFilter 指令,`RUST_LOG` 调试输出会静默失效。
+
+### 4.1 应用图标替换
+
+**源文件:** 仓库根目录 `icon.png`,由用户提供。已实测:`1024×1024`、8-bit、**colortype 2(RGB,无 alpha 通道)**,内容为黑底圆角方块 + 白色复古麦克风。
+
+**现状:** `src-tauri/icons/` 下有 8 个文件 —— `32x32.png`、`64x64.png`、`128x128.png`、`128x128@2x.png`、`icon.png`(512×512)、`icon.icns`、`icon.ico`、`app-icon.svg`。`tauri.conf.json` 的 `bundle.icon` 引用其中 5 个。`app-icon.svg` 是**上游 logo 的矢量源**,必须删除。`index.html` 中没有 favicon 引用,无需处理。
+
+**关键陷阱(已采样验证):** 源图没有 alpha 通道,圆角外的背景是与图形无关的近白色,而麦克风图形本体同样是近白色:
+
+| 采样点 | RGB |
+| --- | --- |
+| 左上角 `(0,0)` | `(252, 253, 251)` |
+| 圆角外 `(20,20)` | `(254, 254, 254)` |
+| 麦克风本体 `(512,300)` | `(254, 255, 254)` |
+| 圆角内黑底 `(120,120)` | `(23, 23, 23)` |
+
+因此**严禁使用「全局白色 → 透明」的处理方式** —— 麦克风会被直接打穿。必须使用**从四角 flood fill**(仅清除与图像边界连通的背景像素)或几何圆角遮罩。麦克风的白色被黑色底包围、与图像边界不连通,flood fill 不会波及。
+
+**处理步骤:**
+
+1. 预处理:对根 `icon.png` 做四角 flood fill 去背,输出带透明圆角的 RGBA 图,保存为 `src-tauri/icons/app-icon-source.png` 并入库,作为后续重新生成图标的唯一源文件。
+2. 生成全套图标:`npx tauri icon src-tauri/icons/app-icon-source.png`(Tauri CLI 已在 devDependencies 中)。该命令会覆盖 `src-tauri/icons/` 下的标准产物(`icon.icns`、`icon.ico`、各尺寸 PNG,以及 Windows Store 系列)。
+3. 删除 `src-tauri/icons/app-icon.svg`(上游 mark)。
+4. 确认 `tauri.conf.json` 的 `bundle.icon` 5 项引用仍然有效。
+5. 删除仓库根的 `icon.png`(已由第 1 步的源文件取代)。
+6. 托盘图标无需单独配置:`lib.rs` 通过 `app.default_window_icon()` 从 bundle 图标派生,但必须实际验证托盘显示为新图标。
+7. 验证 `.app` 的 Dock 图标四角透明、无白色直角残留。
+
+**排布说明(不默认调整):** 源图主体为 924×926、四周留白约 50px;Apple 官方网格为 824×824 主体 + 100px 留白。当前构图在 Dock 中会比系统图标略大。默认**保持用户给定构图不变**,仅做透明化;若要与系统图标视觉一致,可将主体整体缩放到 824 并居中、圆角半径约 185px。此项需用户明确要求才执行。
+
+**关于 `docs/app-icon-sources.md`:** 该文件记录的是应用感知功能所用的**第三方应用图标**(webp)来源与授权信息,与产品自身图标无关,**必须保留**(见 §5.6)。
 
 `package.json` 的 `version` 与 `Cargo.toml` 的 `version` 必须保持同值(当前均为 `1.1.64`);`src/lib/constants.ts` 的 `APP_VERSION` 开发期回退值 `v1.1.61` 一并校正为与二者一致。
 
@@ -185,6 +217,8 @@ Base revision: `f5ad602`(与上游 `tover0314-w/opentypeless` 完全一致,0 差
 | `docs/images/website.png`、`website-hero.png`、`website-how-it-works.png` | 上游官网营销截图 |
 | `docs/images/desktop-upgrade-lifetime.png` | 展示已删除的升级页 |
 | `docs/images/demo.gif` | 没有任何 README 引用 |
+| 仓库根 `icon.png` | 作为图标源已在 §4.1 第 1 步转为 `src-tauri/icons/app-icon-source.png`,根目录不再保留副本 |
+| `src-tauri/icons/app-icon.svg` | 上游 logo 矢量源(§4.1) |
 
 **保留但需改写(去除上游仓库引用与已删功能章节):**
 
@@ -196,6 +230,11 @@ Base revision: `f5ad602`(与上游 `tover0314-w/opentypeless` 完全一致,0 差
 
 **保留不动:**
 
+- `docs/` 中被保留的资产,删除上游文档后 `docs/` 只应剩以下内容,其余一律清除:
+  - `docs/app-icon-sources.md` —— 记录应用感知功能所用**第三方应用图标**的来源与授权,是重新发布二进制前的合规依据,必须保留。
+  - `docs/release-signing.md` —— 需改写:现有内容全部指向上游仓库与上游 secrets,须替换为本仓库的签名/公证说明,并与 §8 的 updater 公钥要求对齐。
+  - `docs/images/` 中经 §5.6 逐张核验后保留的截图。
+  - `docs/superpowers/specs/2026-11-06-local-only-byok-design.md`(本文件)。
 - `.github/workflows/ci.yml`、`codeql.yml`、`labeler.yml`、`lock-threads.yml`、`pr-title.yml`、`stale.yml`、`typos.yml`、`check-notarization.yml`、`.github/dependabot.yml`、`.github/PULL_REQUEST_TEMPLATE.md`、`.github/labeler.yml`、`.gitignore`、`.gitattributes`、`.editorconfig`、`.typos.toml`、`.prettierrc`、`eslint.config.js`、`tsconfig*.json`、`vite.config.ts`、`vitest.config.ts`、`.vscode/`。`check-notarization.yml` 虽与发版相关,但不含上游引用,是手动触发的公证状态查询工具,保留。
 - `.github/scripts/` 中**被 `ci.yml` 依赖**的 5 个打包守卫脚本必须保留:`test-linux-appimage-packaging.sh`、`prepare-linuxdeploy-wrapper.sh`、`linuxdeploy-exclude-wrapper.rs`、`linuxdeploy-plugin-appimage-exclude-wrapper.sh`、`verify-appimage-runtime-libraries.sh`。`ci.yml` 会执行 `test-linux-appimage-packaging.sh` 与 `prepare-linuxdeploy-wrapper.sh`,删除会导致 CI 失败。这 5 个脚本只做内部标识改名:`.opentypeless-linuxdeploy-*` → `.talkwithyourai-linuxdeploy-*`,以及测试夹具名 `OpenTypeless.AppDir` / `OpenTypeless.AppImage` → `TalkWithYourAI.AppDir` / `TalkWithYourAI.AppImage`。**改名必须两侧同步**:`linuxdeploy-exclude-wrapper.rs` 中 `OsString::from("OpenTypeless.AppDir")` 是断言期望值,`test-linux-appimage-packaging.sh` 中同名变量是实际传入值,只改一侧会让该守卫用例失败。
 
@@ -332,6 +371,7 @@ MIT 许可证要求保留原版权声明,因此:
      - `package-lock.json` 中来自 npm 依赖的包名或 URL 佐证(若确有依赖来源含该字符串,需在提交信息中说明具体来源,不允许整文件豁免)。
    - 白名单以外的任何命中都视为未完成。
 10. i18n key 一致性脚本:10 份 locale 的 key 集合完全一致,且不含 §5.3 列出的 key 树。
+11. 图标资产核验: `src-tauri/icons/` 下 `icon.icns`、`icon.ico`、各尺寸 PNG 均由新源生成(比对 mtime);`app-icon.svg` 已删除;`icon.png` 与 `128x128.png` 的 colortype 为 6(RGBA);对生成后的 `128x128.png` 采样四角像素,确认 alpha 为 0(即圆角透明,无白色直角);确认麦克风图形区域未被去背误伤(该区域 alpha 为 255)。
 
 **无法在本机完成的验证(需真机,明确记录为未验证项):**
 
@@ -348,11 +388,12 @@ MIT 许可证要求保留原版权声明,因此:
 2. **前端拆除**:云模块、账号页、升级页、导航入口、`App.tsx`、`appStore` 类型与回退,`vitest` 通过。
 3. **引导页与设置面板收窄**。
 4. **品牌替换**(§4)与 Tauri 配置 / 依赖 / 权限调整。
-5. **i18n 清理与一致性校验**。
-6. **词典格式标识改名与双向兼容**(§7.4)。
-7. **仓库门面与上游文档清理**(§5.6),含打包守卫脚本的同步改名。
-8. **README 与许可署名处理**(§12)。
-9. **全量验证与残留审计**(§13)。
+5. **应用图标替换**(§4.1):去背 → `tauri icon` → 删除上游矢量源 → 四角与麦克风采样核验。
+6. **i18n 清理与一致性校验**。
+7. **词典格式标识改名与双向兼容**(§7.4)。
+8. **仓库门面与上游文档清理**(§5.6),含打包守卫脚本的同步改名。
+9. **README 与许可署名处理**(§12)。
+10. **全量验证与残留审计**(§13)。
 
 每一步独立可验证,便于在任一步骤失败时定位问题范围。
 
@@ -370,6 +411,8 @@ MIT 许可证要求保留原版权声明,因此:
 | 打包守卫夹具改名只改一侧 | `test-linux-appimage-packaging.sh` 断言与实际参数不匹配,守卫用例失败 | 改名必须同时覆盖 `linuxdeploy-exclude-wrapper.rs` 的 `OsString::from("OpenTypeless.AppDir")` 期望值与 shell 侧传入值,改完立即跑该守卫用例 |
 | README 截图仍显示账号 / 升级入口 | 用改造前的界面冒充改造后的产品 | §5.6 要求逐张打开确认,露出的截图删除并去掉引用 |
 | 残留审计白名单被过度使用 | 旧名残留被当成「例外」放过 | §13 第 9 步把白名单限定为 4 条具体位置,并禁止整文件豁免(如 `package-lock.json`) |
+| 图标去背误伤麦克风图形 | 源图背景与麦克风同为近白色(250–254 vs 254,255,254),用「白色转透明」会把麦克风打穿,图标直接废掉 | §4.1 强制使用四角 flood fill 或几何遮罩,禁止全局色键;§13 第 11 步对麦克风区域 alpha 做采样核验 |
+| 图标圆角不透明 | 源图无 alpha,直接生成会在 Dock 露出白色直角 | §4.1 第 1 步先做透明化再生成;§13 第 11 步核验四角 alpha 为 0 |
 
 ## 16. 审批
 
