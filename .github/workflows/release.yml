@@ -97,6 +97,14 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           set -eu
+          # Linux only: the Tauri AppImage bundler reads its cached linuxdeploy
+          # from ${XDG_CACHE_HOME}/tauri. The prepare step above placed a
+          # SHA256-verified wrapper there; without matching this value the
+          # bundler falls back to downloading its own copy, which failed with
+          # an unverifiable HTTP 504 during the first release run.
+          if [ "${{ matrix.platform_group }}" = "linux" ]; then
+            export XDG_CACHE_HOME="${{ runner.temp }}/talkwithyourai-packaging-tools"
+          fi
           # Build the --config arguments as an array so `--config` and its JSON
           # value stay two separate argv entries. Storing them in a single quoted
           # string makes tauri see one malformed argument.
