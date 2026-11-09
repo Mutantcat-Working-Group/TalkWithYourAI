@@ -76,7 +76,10 @@ jobs:
       - uses: swatinem/rust-cache@9d47c6ad4b02e050fd481d890b2ea34778fd09d6 # v2.7.8
         with:
           workspaces: src-tauri -> target
-          key: release-${{ matrix.platform_group }}
+          # Keyed per target shape: a cached single-arch libopus.a must never be
+          # reused by the universal (lipo) build, which would yield an
+          # arm64-only "universal" bundle.
+          key: release-${{ matrix.platform_group }}-${{ matrix.platform_group == 'macos' && 'universal' || 'native' }}
 
       - name: Install Linux dependencies
         if: matrix.platform_group == 'linux'
@@ -99,8 +102,10 @@ jobs:
           # value stay two separate argv entries. Storing them in a single quoted
           # string makes tauri see one malformed argument.
           updater_flag=(--config '{"bundle":{"createUpdaterArtifacts":false}}')
-          if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+          if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" ]; then
             updater_flag=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
+          elif [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is set but the password is empty - building without updater artifacts (a protected key would fail signing at the end of the build)."
           else
             echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not configured - building without updater artifacts."
           fi
@@ -110,6 +115,10 @@ jobs:
       # github.com/tauri-apps/binary-releases and intermittently returns 504.
       # Keep it off the critical path: .deb above is the guaranteed Linux
       # artifact, AppImage is best-effort retried here and never fails the run.
+      # The flag is passed via $GITHUB_ENV rather than step outputs: a step that
+      # writes $GITHUB_OUTPUT still needs an `outputs:` mapping to be readable
+      # as steps.<id>.outputs.<name>, and forgetting that mapping silently
+      # resolves to '' -- which would skip the AppImage build forever.
       - name: Prepare AppImage toolchain (best effort)
         if: matrix.platform_group == 'linux'
         continue-on-error: true
@@ -122,18 +131,18 @@ jobs:
             echo "::group::prepare-linuxdeploy attempt $attempt"
             if ./.github/scripts/prepare-linuxdeploy-wrapper.sh "$(uname -m)"; then
               echo "::endgroup::"
-              echo "prepared=true" >> "$GITHUB_OUTPUT"
+              echo "APPIMAGE_PREPARED=true" >> "$GITHUB_ENV"
               exit 0
             fi
             echo "::endgroup::"
             sleep $((attempt * 20))
           done
           echo "::warning::linuxdeploy download failed after 3 attempts; skipping AppImage, .deb is still produced."
-          echo "prepared=false" >> "$GITHUB_OUTPUT"
+          echo "APPIMAGE_PREPARED=false" >> "$GITHUB_ENV"
           exit 0
 
       - name: Build AppImage (best effort)
-        if: matrix.platform_group == 'linux' && steps.appimage_prepare.outputs.prepared == 'true'
+        if: matrix.platform_group == 'linux' && env.APPIMAGE_PREPARED == 'true'
         continue-on-error: true
         shell: bash
         env:
@@ -142,11 +151,11 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           set -eu
-          updater_flag=(--config '{"bundle":{"createUpdaterArtifacts":false}}')
-          if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
-            updater_flag=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
-          fi
-          npx tauri build --bundles appimage "${updater_flag[@]}" \
+          # A .deb-only build is not updater-enabled, and enabling updater
+          # artifacts without an updater target makes tauri-bundler abort. So
+          # this AppImage run always leaves them off.
+          npx tauri build --bundles appimage \
+            --config '{"bundle":{"createUpdaterArtifacts":false}}' \
             || echo "::warning::AppImage bundling failed; .deb is still published."
 
       # Tauri deletes the .app after sealing the .dmg, so verify the copy the
@@ -238,15 +247,36 @@ jobs:
       - name: Resolve release tag
         id: tag
         shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
         run: |
-          if [ -n "${{ inputs.tag }}" ]; then
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          if [ -n "$INPUT_TAG" ]; then
+            echo "tag=$INPUT_TAG" >> "$GITHUB_OUTPUT"
           else
             echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: List release assets
         run: find dist -type f | sort
+
+      # fail_on_unmatched_files is false so an optional AppImage absence does not
+      # fail the run, but that also means a totally empty dist/ would publish a
+      # green, empty release. Assert the three required installers are present.
+      - name: Assert release assets exist
+        run: |
+          set -eu
+          count=$(find dist -type f | wc -l | tr -d ' ')
+          echo "Found ${count} release assets"
+          if [ "$count" -lt 3 ]; then
+            echo "::error::Expected at least 3 release assets (dmg, exe, deb), found ${count}"
+            exit 1
+          fi
+          for ext in dmg exe deb; do
+            if ! find dist -name "*.${ext}" | grep -q .; then
+              echo "::error::Missing .${ext} installer"
+              exit 1
+            fi
+          done
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@c95fe1489396fe8a9eb87c0abf8aa5b2ef267fda # v2.2.1
