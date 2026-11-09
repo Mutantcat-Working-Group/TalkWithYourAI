@@ -149,15 +149,32 @@ jobs:
           npx tauri build --bundles appimage "${updater_flag[@]}" \
             || echo "::warning::AppImage bundling failed; .deb is still published."
 
-      - name: Verify macOS ad-hoc signature
+      # Tauri deletes the .app after sealing the .dmg, so verify the copy the
+      # user actually receives by mounting the dmg. Failing here means the
+      # shipped bundle is not ad-hoc signed and the release is not shippable.
+      - name: Verify macOS ad-hoc signature (from the dmg)
         if: matrix.platform_group == 'macos'
         shell: bash
         run: |
           set -eu
-          app="$(find src-tauri/target/universal-apple-darwin/release/bundle/macos -maxdepth 1 -name '*.app' | head -n1)"
+          dmg="$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name '*.dmg' | head -n1)"
+          if [ -z "$dmg" ]; then
+            echo "::error::No .dmg was produced"
+            exit 1
+          fi
+          mountpoint="$(mktemp -d)"
+          hdiutil attach "$dmg" -mountpoint "$mountpoint" -nobrowse -quiet
+          trap 'hdiutil detach "$mountpoint" -quiet || true' EXIT
+          app="$(find "$mountpoint" -maxdepth 1 -name '*.app' | head -n1)"
+          if [ -z "$app" ]; then
+            echo "::error::No .app inside $dmg"
+            exit 1
+          fi
           echo "Bundle: $app"
           codesign --verify --deep --strict --verbose=2 "$app"
           codesign -dv --verbose=4 "$app" 2>&1 | grep -E 'Signature|Identifier|Format' || true
+          codesign -dv --verbose=4 "$app" 2>&1 | grep -q 'Signature=adhoc' \
+            || { echo "::error::Bundle is not ad-hoc signed"; exit 1; }
 
       - name: List produced installers
         shell: bash
