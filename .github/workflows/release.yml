@@ -97,13 +97,16 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           set -eu
-          if [ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
-            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not configured - building without updater artifacts."
-            extra_config='--config {"bundle":{"createUpdaterArtifacts":false}}'
+          # Build the --config arguments as an array so `--config` and its JSON
+          # value stay two separate argv entries. Storing them in a single quoted
+          # string makes tauri see one malformed argument.
+          updater_flag=(--config '{"bundle":{"createUpdaterArtifacts":false}}')
+          if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+            updater_flag=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
           else
-            extra_config='--config {"bundle":{"createUpdaterArtifacts":true}}'
+            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not configured - building without updater artifacts."
           fi
-          npx tauri build ${{ matrix.args }} "$extra_config"
+          npx tauri build ${{ matrix.args }} "${updater_flag[@]}"
 
       - name: Verify macOS ad-hoc signature
         if: matrix.platform_group == 'macos'
