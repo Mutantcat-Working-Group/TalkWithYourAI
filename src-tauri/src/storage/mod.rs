@@ -377,6 +377,8 @@ pub struct AppConfig {
     pub ui_language: String,
     pub capsule_auto_hide: bool,
     pub developer_terminology_enabled: bool,
+    /// Correct same-sound/look-alike characters using the detected context.
+    pub contextual_typo_fix_enabled: bool,
 }
 
 impl Default for AppConfig {
@@ -434,6 +436,7 @@ impl Default for AppConfig {
             ui_language: "en".to_string(),
             capsule_auto_hide: false,
             developer_terminology_enabled: true,
+            contextual_typo_fix_enabled: true,
         }
     }
 }

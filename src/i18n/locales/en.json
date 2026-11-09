@@ -454,7 +454,9 @@
     "importComplete": "Imported {{count}} entries",
     "exportFailed": "Failed to export dictionary",
     "developerTerms": "Fix developer terms",
-    "developerTermsDesc": "Automatically correct split technical terms such as \"code x\" to Codex and \"get hub\" to GitHub. Your dictionary and corrections always take priority."
+    "developerTermsDesc": "Automatically correct split technical terms such as \"code x\" to Codex and \"get hub\" to GitHub. Your dictionary and corrections always take priority.",
+    "contextualTypoFix": "Fix typos by context",
+    "contextualTypoFixDesc": "Corrects same-sound or look-alike characters using the app you are in. A term that makes no sense while coding is fixed; names and identifiers are left alone."
   },
   "scenes": {
     "failedToLoad": "Failed to load scenes.",

@@ -2319,6 +2319,7 @@ impl PipelineHandle {
             selected_text,
             operation_id,
             voice_intent: voice_intent.clone(),
+            contextual_typo_fix_enabled: config.contextual_typo_fix_enabled,
         };
 
         let polish_result = provider.polish(&llm_config, &req, Some(&on_chunk)).await;

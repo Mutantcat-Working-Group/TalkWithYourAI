@@ -76,6 +76,7 @@ export function DictionaryPane() {
   const setDictionary = useAppStore((state) => state.setDictionary)
   const updateConfig = useAppStore((state) => state.updateConfig)
   const developerTermsEnabled = useAppStore((state) => state.config.developer_terminology_enabled)
+  const contextualTypoFixEnabled = useAppStore((state) => state.config.contextual_typo_fix_enabled)
   const correctionRules = useAppStore((state) => state.correctionRules)
   const setCorrectionRules = useAppStore((state) => state.setCorrectionRules)
   const { t } = useTranslation()
@@ -359,6 +360,17 @@ export function DictionaryPane() {
         />
         <p className="mt-1 ml-[52px] text-[11px] leading-relaxed text-text-tertiary">
           {t('dictionary.developerTermsDesc')}
+        </p>
+      </div>
+
+      <div className="rounded-[10px] border border-border bg-bg-secondary/40 p-3">
+        <Toggle
+          checked={contextualTypoFixEnabled}
+          onChange={(checked) => updateConfig({ contextual_typo_fix_enabled: checked })}
+          label={t('dictionary.contextualTypoFix')}
+        />
+        <p className="mt-1 ml-[52px] text-[11px] leading-relaxed text-text-tertiary">
+          {t('dictionary.contextualTypoFixDesc')}
         </p>
       </div>
 

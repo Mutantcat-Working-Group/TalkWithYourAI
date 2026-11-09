@@ -454,7 +454,9 @@
     "importComplete": "{{count}} 件をインポートしました",
     "exportFailed": "辞書のエクスポートに失敗しました",
     "developerTerms": "開発者用語を修正",
-    "developerTermsDesc": "「code x」のような分割された技術用語を Codex に、「get hub」を GitHub に自動修正します。辞書と修正ルールが常に優先されます。"
+    "developerTermsDesc": "「code x」のような分割された技術用語を Codex に、「get hub」を GitHub に自動修正します。辞書と修正ルールが常に優先されます。",
+    "contextualTypoFix": "文脈で誤字を修正",
+    "contextualTypoFixDesc": "使用中のアプリから文脈を判断し、同音字・類似字を修正します。コーディング中の誤った用語は直し、人名や識別子は変更しません。"
   },
   "scenes": {
     "failedToLoad": "シーンの読み込みに失敗しました。",

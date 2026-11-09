@@ -51,6 +51,7 @@ type SafeScalarKey =
   | 'ui_language'
   | 'capsule_auto_hide'
   | 'developer_terminology_enabled'
+  | 'contextual_typo_fix_enabled'
 
 export type BackupSettings = Partial<Pick<AppConfig, SafeScalarKey>> & {
   voice_routing_flags?: VoiceRoutingFlags
@@ -181,6 +182,7 @@ export function createBackupSettings(config: AppConfig): BackupSettings {
     ui_language: config.ui_language,
     capsule_auto_hide: config.capsule_auto_hide,
     developer_terminology_enabled: config.developer_terminology_enabled,
+    contextual_typo_fix_enabled: config.contextual_typo_fix_enabled,
   }
 
   if (config.voice_routing_flags) {
@@ -236,6 +238,7 @@ const SAFE_SCALAR_KEYS: readonly SafeScalarKey[] = [
   'ui_language',
   'capsule_auto_hide',
   'developer_terminology_enabled',
+  'contextual_typo_fix_enabled',
 ]
 
 function isRecord(value: unknown): value is Record<string, unknown> {

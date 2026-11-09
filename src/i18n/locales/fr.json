@@ -454,7 +454,9 @@
     "importComplete": "{{count}} entrées importées",
     "exportFailed": "Impossible d'exporter le dictionnaire",
     "developerTerms": "Corriger les termes techniques",
-    "developerTermsDesc": "Corrige automatiquement les termes techniques scindés comme « code x » en Codex et « get hub » en GitHub. Votre dictionnaire et vos corrections restent prioritaires."
+    "developerTermsDesc": "Corrige automatiquement les termes techniques scindés comme « code x » en Codex et « get hub » en GitHub. Votre dictionnaire et vos corrections restent prioritaires.",
+    "contextualTypoFix": "Corriger selon le contexte",
+    "contextualTypoFixDesc": "Corrige les homophones et les caractères ressemblants d'après l'application utilisée. Un terme erroné pendant le code est corrigé ; les noms et identifiants restent intacts."
   },
   "scenes": {
     "failedToLoad": "Impossible de charger les scènes.",

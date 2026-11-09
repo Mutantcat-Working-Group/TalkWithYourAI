@@ -454,7 +454,9 @@
     "importComplete": "{{count}} Einträge importiert",
     "exportFailed": "Wörterbuch konnte nicht exportiert werden",
     "developerTerms": "Entwicklerbegriffe korrigieren",
-    "developerTermsDesc": "Korrigiert automatisch getrennte Fachbegriffe wie „code x“ zu Codex und „get hub“ zu GitHub. Wörterbuch und Korrekturen haben immer Vorrang."
+    "developerTermsDesc": "Korrigiert automatisch getrennte Fachbegriffe wie „code x“ zu Codex und „get hub“ zu GitHub. Wörterbuch und Korrekturen haben immer Vorrang.",
+    "contextualTypoFix": "Tippfehler kontextabhängig korrigieren",
+    "contextualTypoFixDesc": "Korrigiert gleich klingende oder ähnlich aussehende Zeichen anhand der verwendeten App. Falsche Fachbegriffe beim Programmieren werden behoben, Namen und Bezeichner bleiben unverändert."
   },
   "scenes": {
     "failedToLoad": "Szenen konnten nicht geladen werden.",

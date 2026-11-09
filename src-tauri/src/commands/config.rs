@@ -51,6 +51,12 @@ fn config_patch_between(previous: &storage::AppConfig, next: &storage::AppConfig
     if previous.ui_language != next.ui_language {
         patch.insert("ui_language".to_string(), json!(next.ui_language));
     }
+    if previous.contextual_typo_fix_enabled != next.contextual_typo_fix_enabled {
+        patch.insert(
+            "contextual_typo_fix_enabled".to_string(),
+            json!(next.contextual_typo_fix_enabled),
+        );
+    }
     if previous.developer_terminology_enabled != next.developer_terminology_enabled {
         patch.insert(
             "developer_terminology_enabled".to_string(),

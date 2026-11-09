@@ -454,7 +454,9 @@
     "importComplete": "已导入 {{count}} 项",
     "exportFailed": "导出词典失败",
     "developerTerms": "修正开发者术语",
-    "developerTermsDesc": "自动将“code x”等被拆开的术语修正为 Codex，“get hub”修正为 GitHub。你的词典和纠正规则始终优先。"
+    "developerTermsDesc": "自动将“code x”等被拆开的术语修正为 Codex，“get hub”修正为 GitHub。你的词典和纠正规则始终优先。",
+    "contextualTypoFix": "按语境修正错别字",
+    "contextualTypoFixDesc": "根据当前所在的应用判断语境，修正同音字和形近字。编程时写错的术语会被改对，人名和标识符保持不变。"
   },
   "scenes": {
     "failedToLoad": "加载场景失败。",

@@ -51,6 +51,8 @@ pub struct PolishRequest {
     pub selected_text: Option<String>,
     pub operation_id: Option<String>,
     pub voice_intent: crate::voice_intent::VoiceIntent,
+    /// Correct same-sound/look-alike characters using the detected context.
+    pub contextual_typo_fix_enabled: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -181,6 +183,7 @@ mod context_prompt_contract_tests {
             target_lang: "en",
             has_selected_text: false,
             voice_intent: None,
+            contextual_typo_fix_enabled: true,
         })
     }
 
@@ -271,6 +274,7 @@ mod context_prompt_contract_tests {
             target_lang: "en",
             has_selected_text: true,
             voice_intent: Some(&intent),
+            contextual_typo_fix_enabled: true,
         });
 
         assert!(prompt.contains("TRUSTED OPERATION: rewrite_selection"));

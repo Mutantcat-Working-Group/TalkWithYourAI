@@ -57,6 +57,7 @@ impl LlmProvider for OpenAiProvider {
             target_lang: &req.target_lang,
             has_selected_text,
             voice_intent: Some(&req.voice_intent),
+            contextual_typo_fix_enabled: req.contextual_typo_fix_enabled,
         });
 
         let mut messages = vec![serde_json::json!({ "role": "system", "content": system_prompt })];

@@ -454,7 +454,9 @@
     "importComplete": "Importate {{count}} voci",
     "exportFailed": "Impossibile esportare il dizionario",
     "developerTerms": "Correggi i termini tecnici",
-    "developerTermsDesc": "Corregge automaticamente i termini tecnici spezzati come \"code x\" in Codex e \"get hub\" in GitHub. Il dizionario e le correzioni hanno sempre la precedenza."
+    "developerTermsDesc": "Corregge automaticamente i termini tecnici spezzati come \"code x\" in Codex e \"get hub\" in GitHub. Il dizionario e le correzioni hanno sempre la precedenza.",
+    "contextualTypoFix": "Correggi in base al contesto",
+    "contextualTypoFixDesc": "Corregge omofoni e caratteri simili in base all'app in uso. Un termine errato mentre si programma viene corretto; nomi e identificatori restano intatti."
   },
   "scenes": {
     "failedToLoad": "Caricamento scene non riuscito.",

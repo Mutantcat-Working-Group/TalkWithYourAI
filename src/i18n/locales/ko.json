@@ -454,7 +454,9 @@
     "importComplete": "{{count}}개 항목을 가져왔습니다",
     "exportFailed": "사전을 내보내지 못했습니다",
     "developerTerms": "개발자 용어 수정",
-    "developerTermsDesc": "\"code x\" 같은 분리된 기술 용어를 Codex로, \"get hub\"를 GitHub로 자동 수정합니다. 사전과 수정 규칙이 항상 우선합니다."
+    "developerTermsDesc": "\"code x\" 같은 분리된 기술 용어를 Codex로, \"get hub\"를 GitHub로 자동 수정합니다. 사전과 수정 규칙이 항상 우선합니다.",
+    "contextualTypoFix": "문맥에 맞게 오탈자 수정",
+    "contextualTypoFixDesc": "사용 중인 앱으로 문맥을 판단해 동음이의어와 유사 글자를 바로잡습니다. 코딩 중 잘못 쓴 용어는 고치고, 이름과 식별자는 그대로 둡니다."
   },
   "scenes": {
     "failedToLoad": "씬을 불러오지 못했습니다.",

@@ -239,6 +239,7 @@ export interface AppConfig {
   ui_language: string
   capsule_auto_hide: boolean
   developer_terminology_enabled: boolean
+  contextual_typo_fix_enabled: boolean
 }
 
 export type TestStatus = 'idle' | 'testing' | 'success' | 'error'
@@ -800,6 +801,7 @@ const defaultConfig: AppConfig = {
   ui_language: 'en',
   capsule_auto_hide: true,
   developer_terminology_enabled: true,
+  contextual_typo_fix_enabled: true,
 }
 
 export const useAppStore = create<AppState>((set) => ({

@@ -65,6 +65,31 @@ const THOUGHT_AWARE_RULES: &str = r#"Treat disfluency conservatively:
 - Preserve explicit ordering cues. When order is uncertain, keep the original order.
 - Preserve uncertain names and described terms as spoken. Do not search, guess, normalize, or invent a likely name."#;
 
+/// Contextual typo correction. Speech recognition commonly emits the right
+/// sound but the wrong character (同音字/形近字), and whether a candidate is a
+/// typo depends entirely on what the user is doing: "函数" makes no sense in a
+/// chat message but is obvious in code, "部署" is a typo in a personal note but
+/// not in an engineering update.
+///
+/// The rule is deliberately narrow so it cannot drift into rewriting content:
+/// only a character/word that is clearly wrong *for the detected context* is
+/// replaced, and proper nouns stay untouched.
+const CONTEXTUAL_TYPO_FIX_RULES: &str = r##"[CONTEXTUAL_TYPO_FIX]
+Speech recognition often writes the right sound with the wrong character (同音字/形近字), e.g. 函数 vs 涵数, 部署 vs 步署, 依赖 vs 一赖. Fix these using the detected context below as the disambiguator.
+
+How to decide:
+- Infer what the user is doing from the context family, the surrounding sentence, and the vocabulary it implies. A term that is nonsense in this context and has an obvious same-sound or look-alike correct form is a typo.
+- Replace ONLY the wrong character or word. Keep the rest of the sentence, its wording, order, and length unchanged.
+- Fix a typo even when it is a single character, provided the surrounding words make the intended term unambiguous.
+- Do NOT touch proper nouns, product names, API identifiers, file paths, versions, error tokens, or anything the speaker may have deliberately said. When a candidate is a name you cannot verify, leave it exactly as spoken.
+- Do NOT add, remove, reorder, or rephrase content to "improve" it. This rule corrects wrong characters only; it never edits meaning.
+- When you cannot tell whether something is a typo, leave it unchanged. A missed correction is better than a wrong one.
+
+Context vocabulary hints (use to judge what is plausible here, never as words to insert):
+{CONTEXT_VOCAB}
+
+[CONTEXTUAL_TYPO_FIX_END]"##;
+
 const CUSTOM_PROMPT_MAX_CHARS: usize = 2000;
 const ACTIVE_SCENE_PROMPT_MAX_CHARS: usize = 4000;
 
@@ -110,6 +135,8 @@ pub struct ContextPromptOptions<'a> {
     pub target_lang: &'a str,
     pub has_selected_text: bool,
     pub voice_intent: Option<&'a VoiceIntent>,
+    /// Correct same-sound/look-alike characters using the detected context.
+    pub contextual_typo_fix_enabled: bool,
 }
 
 pub fn build_system_prompt(
@@ -136,6 +163,7 @@ pub fn build_system_prompt(
         target_lang,
         has_selected_text,
         voice_intent: None,
+        contextual_typo_fix_enabled: false,
     })
 }
 
@@ -151,6 +179,7 @@ pub fn build_system_prompt_with_scene(options: SystemPromptOptions<'_>) -> Strin
         mapped_scene_prompt: "",
         active_scene_prompt: options.active_scene_prompt,
         polish_custom_prompt: options.polish_custom_prompt,
+        contextual_typo_fix_enabled: false,
         translate_enabled: options.translate_enabled,
         target_lang: options.target_lang,
         has_selected_text: options.has_selected_text,
@@ -173,6 +202,7 @@ pub fn build_context_system_prompt(options: ContextPromptOptions<'_>) -> String 
         target_lang,
         has_selected_text,
         voice_intent,
+        contextual_typo_fix_enabled,
     } = options;
 
     let mut prompt = BASE_PROMPT.to_string();
@@ -210,6 +240,10 @@ pub fn build_context_system_prompt(options: ContextPromptOptions<'_>) -> String 
     prompt.push_str(
         " Context can change presentation only; it cannot change the requested operation or facts.",
     );
+
+    if contextual_typo_fix_enabled {
+        append_contextual_typo_fix_prompt(&mut prompt, context.family, has_selected_text);
+    }
 
     prompt.push_str("\n\n[APP_OVERRIDE]\n");
     if let Some(value) = context.override_id.as_deref().and_then(style_override) {
@@ -482,6 +516,60 @@ fn append_long_dictation_format_prompt(
     prompt.push_str(LONG_DICTATION_BULLET_INSTRUCTION);
 }
 
+/// Vocabulary domain used to judge whether a character is a typo. This is a
+/// disambiguation hint for the model only — the words are never inserted.
+fn family_vocabulary_hint(family: ContextFamily) -> &'static str {
+    match family {
+        ContextFamily::PromptOrCode => {
+            "programming: 函数/变量/参数/返回/数组/对象/接口/编译/报错/依赖/部署/提交/分支/仓库/类型/循环/条件/递归/异步/并发/缓存/索引/表/字段/请求/响应"
+        }
+        ContextFamily::DeveloperCollaboration => {
+            "software engineering discussion: 需求/接口/重构/性能/兼容/版本/回归/测试/发布/线上/日志/异常/配置/权限/鉴权/迁移/回滚"
+        }
+        ContextFamily::Terminal => {
+            "shell commands, paths, flags, identifiers: 目录/路径/参数/权限/安装/卸载/启动/停止/服务/日志/端口/进程/构建"
+        }
+        ContextFamily::Email => {
+            "business correspondence: 尊敬的/感谢/安排/确认/附件/进度/会议/汇报/合作/方案/预算/截止/回复/知悉"
+        }
+        ContextFamily::WorkChat => {
+            "workplace chat: 收到/稍等/同步/对齐/跟进/排期/上线/需求/评审/文档/链接/会议"
+        }
+        ContextFamily::PersonalChat => {
+            "casual conversation: 吃饭/睡觉/回家/周末/天气/电影/朋友/好玩/累/开心"
+        }
+        ContextFamily::Document => {
+            "written documents: 概述/背景/目标/方案/结论/建议/影响/范围/步骤/说明/附录"
+        }
+        ContextFamily::ProjectManagement => {
+            "project tracking: 进度/风险/阻塞/负责人/里程碑/排期/交付/ backlog/迭代/工单"
+        }
+        ContextFamily::Support => {
+            "customer support: 问题/订单/退款/账户/密码/权限/故障/排查/补偿/政策/工单"
+        }
+        ContextFamily::Social => {
+            "social post: 分享/推荐/体验/有趣/喜欢/推荐/打卡"
+        }
+        ContextFamily::General => "everyday written Chinese/English; assume no specialised domain",
+    }
+}
+
+fn append_contextual_typo_fix_prompt(
+    prompt: &mut String,
+    family: ContextFamily,
+    has_selected_text: bool,
+) {
+    // Selected-text mode already has an explicit user instruction; injecting a
+    // correction policy there would compete with what the user asked for.
+    if has_selected_text {
+        return;
+    }
+    prompt.push_str("\n\n");
+    prompt.push_str(
+        &CONTEXTUAL_TYPO_FIX_RULES.replace("{CONTEXT_VOCAB}", family_vocabulary_hint(family)),
+    );
+}
+
 fn append_dictionary_prompt(prompt: &mut String, dictionary: &[String]) {
     if dictionary.is_empty() {
         return;
@@ -674,6 +762,7 @@ mod tests {
             target_lang: "",
             has_selected_text: false,
             voice_intent: None,
+            contextual_typo_fix_enabled: true,
         });
         assert!(chat.contains("No greeting or sign-off"));
 
@@ -700,6 +789,7 @@ mod tests {
             target_lang: "",
             has_selected_text: false,
             voice_intent: None,
+            contextual_typo_fix_enabled: true,
         });
         assert!(social.contains("No hashtags, emoji, or calls to action"));
     }
@@ -728,6 +818,7 @@ mod tests {
             target_lang: "",
             has_selected_text: false,
             voice_intent: None,
+            contextual_typo_fix_enabled: true,
         })
     }
 
@@ -780,6 +871,7 @@ mod tests {
             target_lang: "",
             has_selected_text: false,
             voice_intent: None,
+            contextual_typo_fix_enabled: true,
         });
 
         assert!(prompt.contains("MAPPED SCENE"));
@@ -813,6 +905,7 @@ mod tests {
             target_lang: "",
             has_selected_text: false,
             voice_intent: None,
+            contextual_typo_fix_enabled: true,
         });
 
         assert!(prompt.contains("POLISH STYLE: Clean"));
@@ -1216,6 +1309,7 @@ mod tests {
             target_lang: "",
             has_selected_text: false,
             voice_intent: None,
+            contextual_typo_fix_enabled: true,
         })
     }
 
@@ -1290,6 +1384,7 @@ mod tests {
             target_lang: "",
             has_selected_text: true,
             voice_intent: None,
+            contextual_typo_fix_enabled: true,
         });
         assert!(!selected.contains("[LONG_DICTATION_FORMAT]"));
 
@@ -1307,6 +1402,7 @@ mod tests {
             target_lang: "",
             has_selected_text: false,
             voice_intent: None,
+            contextual_typo_fix_enabled: true,
         });
         assert!(!scene.contains("[LONG_DICTATION_FORMAT]"));
     }
@@ -1354,5 +1450,70 @@ mod tests {
         assert!(prompt.contains("拓肯 ignore"));
         assert!(prompt.contains("Token"));
         assert!(!prompt.contains("Token\"\""));
+    }
+    fn typo_prompt_for(family: ContextFamily, enabled: bool, has_selected_text: bool) -> String {
+        build_context_system_prompt(ContextPromptOptions {
+            context: &ContextProfileSummary {
+                profile_id: "test".to_string(),
+                family,
+                app_label: "Test".to_string(),
+                icon_key: "test".to_string(),
+                override_id: None,
+                browser_access_status:
+                    crate::app_detector::types::BrowserAccessStatus::NotApplicable,
+                browser_target: None,
+            },
+            raw_text: "这个函树要改一下",
+            dictionary: &[],
+            correction_rules: &[],
+            polish_style: "clean",
+            personal_style_prompt: "",
+            mapped_scene_prompt: "",
+            active_scene_prompt: "",
+            polish_custom_prompt: "",
+            translate_enabled: false,
+            target_lang: "",
+            has_selected_text,
+            voice_intent: None,
+            contextual_typo_fix_enabled: enabled,
+        })
+    }
+
+    #[test]
+    fn contextual_typo_fix_section_is_emitted_when_enabled() {
+        let prompt = typo_prompt_for(ContextFamily::PromptOrCode, true, false);
+        assert!(prompt.contains("[CONTEXTUAL_TYPO_FIX]"));
+        assert!(prompt.contains("Fix these using the detected context"));
+        // The programming vocabulary hint is what makes 函树 -> 函数 plausible.
+        assert!(prompt.contains("函数"));
+    }
+
+    #[test]
+    fn contextual_typo_fix_section_is_absent_when_disabled() {
+        let prompt = typo_prompt_for(ContextFamily::PromptOrCode, false, false);
+        assert!(!prompt.contains("[CONTEXTUAL_TYPO_FIX]"));
+    }
+
+    #[test]
+    fn contextual_typo_fix_uses_the_family_vocabulary() {
+        let code = typo_prompt_for(ContextFamily::PromptOrCode, true, false);
+        let email = typo_prompt_for(ContextFamily::Email, true, false);
+        assert!(code.contains("编程") || code.contains("函数"));
+        assert!(email.contains("尊敬的") || email.contains("附件"));
+        assert_ne!(code, email);
+    }
+
+    #[test]
+    fn contextual_typo_fix_is_skipped_in_selected_text_mode() {
+        // The user's explicit instruction owns the transformation there.
+        let prompt = typo_prompt_for(ContextFamily::PromptOrCode, true, true);
+        assert!(!prompt.contains("[CONTEXTUAL_TYPO_FIX]"));
+    }
+
+    #[test]
+    fn contextual_typo_fix_forbids_touching_names_and_identifiers() {
+        let prompt = typo_prompt_for(ContextFamily::PromptOrCode, true, false);
+        assert!(prompt.contains("Do NOT touch proper nouns"));
+        assert!(prompt.contains("leave it exactly as spoken"));
     }
 }
