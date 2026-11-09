@@ -245,7 +245,8 @@ jobs:
           done < <(find src-tauri/target -type f \
                      \( -name '*.dmg' -o -name '*.exe' -o -name '*.msi' \
                         -o -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' \) \
-                     -not -path '*/deps/*' | sort)
+                     -not -path '*/deps/*' \
+                     -size +100k | sort)
           if [ "$total" -eq 0 ]; then
             echo "::error::No installers found to checksum"
             exit 1
@@ -339,7 +340,7 @@ jobs:
           expect_count() {
             local pattern="$1" want="$2" label="$3"
             local got
-            got=$(find dist -maxdepth 1 -name "$pattern" | wc -l | tr -d ' ')
+            got=$(find dist -name "$pattern" | wc -l | tr -d ' ')
             if [ "$got" -lt "$want" ]; then
               echo "::error::Expected at least ${want} ${label} (${pattern}), found ${got}"
               return 1
@@ -351,23 +352,26 @@ jobs:
           expect_count '*.deb'        2 "Linux deb (amd64 + arm64)"
           # AppImage is best-effort by design (its linuxdeploy toolchain 504s
           # upstream), so warn instead of failing when it is absent.
-          appimage_count=$(find dist -maxdepth 1 -name '*.AppImage' | wc -l | tr -d ' ')
+          appimage_count=$(find dist -name '*.AppImage' -size +100k | wc -l | tr -d ' ')
           if [ "$appimage_count" -lt 2 ]; then
             echo "::warning::Only ${appimage_count} AppImage(s) produced; expected 2 (amd64 + arm64)."
           else
             echo "  Linux AppImage: ${appimage_count} (>= 2)"
           fi
-          # Every installer must have a checksum file next to it.
+          # Every installer must have a checksum file. Match by basename across
+          # the whole tree: upload-artifact flattens each artifact to its least
+          # common ancestor, so files land in per-artifact subdirectories.
           for f in $(find dist -type f \( -name '*.dmg' -o -name '*.exe' \
                       -o -name '*.deb' -o -name '*.AppImage' \)); do
             base="$(basename "$f")"
-            if [ ! -f "dist/${base}.checksums.txt" ]; then
+            cf="$(find dist -name "${base}.checksums.txt" | head -n1)"
+            if [ -z "$cf" ]; then
               echo "::error::No checksum file for ${base}"
               exit 1
             fi
-            grep -q '^MD5' "dist/${base}.checksums.txt" \
+            grep -q '^MD5' "$cf" \
               || { echo "::error::${base}.checksums.txt has no MD5"; exit 1; }
-            grep -q '^SHA-1' "dist/${base}.checksums.txt" \
+            grep -q '^SHA-1' "$cf" \
               || { echo "::error::${base}.checksums.txt has no SHA-1"; exit 1; }
           done
           echo "All required installers and checksums present."

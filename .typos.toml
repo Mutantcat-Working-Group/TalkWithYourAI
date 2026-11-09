@@ -1,4 +1,6 @@
 [default.extend-words]
+# "mis-" prefix (mis-hearing, mis-transcription)
+mis = "mis"
 # Allow these "words" that typos might flag
 cpal = "cpal"
 stt = "stt"
