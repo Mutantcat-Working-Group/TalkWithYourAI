@@ -10,6 +10,7 @@ import {
   MessageCircle,
   MessagesSquare,
   Share2,
+  SquareTerminal,
 } from 'lucide-react'
 
 import { APP_ICON_BY_KEY } from '../assets/app-icons/manifest'
@@ -31,6 +32,7 @@ const FALLBACK_ICON_BY_FAMILY: Record<ContextFamily, LucideIcon> = {
   prompt_or_code: Code2,
   support: Headphones,
   social: Share2,
+  terminal: SquareTerminal,
   general: AppWindow,
 }
 

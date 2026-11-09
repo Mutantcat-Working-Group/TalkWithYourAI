@@ -408,6 +408,7 @@
     "prompt_or_code": "Anweisung oder Code",
     "support": "Kundendienst",
     "social": "Soziale Medien",
+    "terminal": "Terminal",
     "general": "Allgemein"
   },
   "dictionary": {
@@ -451,7 +452,9 @@
     "importTooLarge": "Wörterbuchdatei überschreitet 1 MiB",
     "importFailed": "Wörterbuch konnte nicht importiert werden",
     "importComplete": "{{count}} Einträge importiert",
-    "exportFailed": "Wörterbuch konnte nicht exportiert werden"
+    "exportFailed": "Wörterbuch konnte nicht exportiert werden",
+    "developerTerms": "Entwicklerbegriffe korrigieren",
+    "developerTermsDesc": "Korrigiert automatisch getrennte Fachbegriffe wie „code x“ zu Codex und „get hub“ zu GitHub. Wörterbuch und Korrekturen haben immer Vorrang."
   },
   "scenes": {
     "failedToLoad": "Szenen konnten nicht geladen werden.",
@@ -535,7 +538,8 @@
       "developer_collaboration": "Entwicklerzusammenarbeit wie GitHub und GitLab.",
       "prompt_or_code": "Prompt- und Code-Tools wie Cursor, VS Code und JetBrains.",
       "support": "Support-Tools wie Zendesk und Intercom.",
-      "social": "Social Apps wie X und LinkedIn."
+      "social": "Social Apps wie X und LinkedIn.",
+      "terminal": "Terminals und CLI-Werkzeuge wie Terminal, iTerm2, Warp und AntShell."
     },
     "systemModes": {
       "email": "E-Mail-Format",
@@ -546,7 +550,8 @@
       "developer_collaboration": "Engineering-Notiz",
       "prompt_or_code": "Prompt-/Code-Anfrage",
       "support": "Support-Antwort",
-      "social": "Social-Media-Beitrag"
+      "social": "Social-Media-Beitrag",
+      "terminal": "Terminalbefehl"
     },
     "systemSceneDescription": "Standard-Schreibmodus. Du kannst ihn bearbeiten oder auf Standard zuruecksetzen.",
     "resetSystemScene": "Auf Standard zuruecksetzen"

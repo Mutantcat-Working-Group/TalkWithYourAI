@@ -187,11 +187,26 @@ fn no_speech_user_error() -> crate::error::UserError {
     }
 }
 
+/// Error-capsule mapping for a failed LLM polish step. Kept for the
+/// operations that cannot degrade (selected-text rewrites, drafts, answers).
 fn llm_polish_user_error(error: &crate::error::AppError) -> crate::error::UserError {
     if matches!(error, crate::error::AppError::LlmQuota(_)) {
         return error.to_user_error();
     }
 
+    crate::error::UserError {
+        code: "llm_failed".to_string(),
+        details: Some(error.to_string()),
+        retry_count: 0,
+    }
+}
+
+/// Non-blocking warning shown when LLM polish fails but the dictation still
+/// completes by falling back to the raw STT transcript. Emitted on
+/// `pipeline:warning` (a toast), never on `pipeline:error` (the error capsule).
+/// Always uses `llm_failed`, whose localized copy already says the original
+/// text was output; `llm_quota_exceeded` has no `errors.*` toast translation.
+fn llm_polish_fallback_user_error(error: &crate::error::AppError) -> crate::error::UserError {
     crate::error::UserError {
         code: "llm_failed".to_string(),
         details: Some(error.to_string()),
@@ -265,6 +280,30 @@ fn selected_text_has_content(selected_text: Option<&str>) -> bool {
 
 fn selected_text_command_requires_llm(selected_text: Option<&str>) -> bool {
     selected_text_has_content(selected_text)
+}
+
+/// What to do when LLM polish fails.
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum PolishFailureRouting {
+    /// Plain dictation: the raw STT transcript is safe to emit as-is.
+    EmitRawTranscript,
+    /// The operation needs generated content (rewrite, translate, draft,
+    /// answer) or is acting on selected text. Typing the raw instruction into
+    /// the app would be wrong, so report instead of emitting anything.
+    NoSafeOutput(&'static str),
+}
+
+fn polish_failure_routing(
+    selected_text: Option<&str>,
+    intent_kind: crate::voice_intent::VoiceIntentKind,
+) -> PolishFailureRouting {
+    if selected_text_has_content(selected_text)
+        || voice_intent_requires_generated_output(intent_kind)
+    {
+        PolishFailureRouting::NoSafeOutput("LLM generation failed; no application text was changed")
+    } else {
+        PolishFailureRouting::EmitRawTranscript
+    }
 }
 
 fn voice_intent_requires_generated_output(kind: crate::voice_intent::VoiceIntentKind) -> bool {
@@ -506,28 +545,9 @@ impl StreamingInsertWorker {
     }
 }
 
-fn spawn_streaming_insert_worker(
-    app_handle: tauri::AppHandle,
-    abort_flag: Arc<AtomicBool>,
-    context_detector: app_detector::ContextDetectorHandle,
-    strategy: output::InsertionStrategy,
-    windows_sendinput_options: output::windows_sendinput::WindowsSendInputOptions,
-    expected_target_guard: TargetAppGuard,
-    expected_target_label: String,
-) -> StreamingInsertWorker {
+fn spawn_streaming_insert_worker(context: StreamingInsertWorkerContext) -> StreamingInsertWorker {
     let (sender, receiver) = mpsc::unbounded_channel();
-    let handle = tokio::spawn(run_streaming_insert_worker(
-        StreamingInsertWorkerContext {
-            app_handle,
-            abort_flag,
-            context_detector,
-            strategy,
-            windows_sendinput_options,
-            expected_target_guard,
-            expected_target_label,
-        },
-        receiver,
-    ));
+    let handle = tokio::spawn(run_streaming_insert_worker(context, receiver));
     StreamingInsertWorker { sender, handle }
 }
 
@@ -539,6 +559,7 @@ struct StreamingInsertWorkerContext {
     windows_sendinput_options: output::windows_sendinput::WindowsSendInputOptions,
     expected_target_guard: TargetAppGuard,
     expected_target_label: String,
+    terminal_target: bool,
 }
 
 async fn run_streaming_insert_worker(
@@ -553,6 +574,7 @@ async fn run_streaming_insert_worker(
         windows_sendinput_options,
         expected_target_guard,
         expected_target_label,
+        terminal_target,
     } = context;
     let mut report = StreamingInsertReport::new(strategy);
 
@@ -575,8 +597,14 @@ async fn run_streaming_insert_worker(
         }
 
         report.attempted_chunks += 1;
-        match output::output_stream_chunk(&app_handle, &chunk, strategy, windows_sendinput_options)
-            .await
+        match output::output_stream_chunk(
+            &app_handle,
+            &chunk,
+            strategy,
+            windows_sendinput_options,
+            terminal_target,
+        )
+        .await
         {
             Ok(insert_result)
                 if insert_result.status == output::InsertStatus::Inserted
@@ -742,6 +770,11 @@ struct PolishTextInput<'a> {
 struct PolishTextOutcome {
     final_text: String,
     llm_elapsed: std::time::Duration,
+    /// True only when the LLM actually produced the text. On a polish
+    /// failure the dictation degrades to the raw STT transcript and this
+    /// stays false, with `polish_fallback_reason` explaining why.
+    polished: bool,
+    polish_fallback_reason: Option<String>,
     history_output_status: Option<String>,
     history_output_error: Option<String>,
     voice_execution: Option<crate::voice_intent::executor::VoiceExecutionResult>,
@@ -822,6 +855,9 @@ struct PipelineVoiceExecutionBackend<'a> {
     config: &'a storage::AppConfig,
     already_copied: bool,
     popup_fallback_enabled: bool,
+    /// Detected target family, so terminal targets keep the line-continuation
+    /// rewrite. `None` means unknown, which never rewrites newlines.
+    family: Option<crate::app_detector::types::ContextFamily>,
 }
 
 #[async_trait::async_trait]
@@ -849,7 +885,13 @@ impl crate::voice_intent::executor::VoiceExecutionBackend for PipelineVoiceExecu
     async fn insert_at_cursor(&mut self, text: &str) -> std::result::Result<(), String> {
         let result = self
             .pipeline
-            .output_text(text, self.app_name, self.target_guard, self.config)
+            .output_text_for_family(
+                text,
+                self.app_name,
+                self.target_guard,
+                self.config,
+                self.family,
+            )
             .await
             .map_err(|error| error.to_string())?;
         if result.status == output::InsertStatus::Inserted {
@@ -917,8 +959,31 @@ impl PolishTextOutcome {
         Self {
             final_text,
             llm_elapsed,
+            polished: true,
+            polish_fallback_reason: None,
             history_output_status: None,
             history_output_error: None,
+            voice_execution: None,
+        }
+    }
+
+    /// Degraded outcome: the LLM polish step failed, so the raw STT
+    /// transcript is emitted instead. `history_output_status`/`_error` still
+    /// land in history so the user can see afterwards that polish was skipped.
+    fn raw_fallback(
+        raw_text: String,
+        llm_elapsed: std::time::Duration,
+        reason: impl Into<String>,
+        history_output_status: Option<String>,
+        history_output_error: Option<String>,
+    ) -> Self {
+        Self {
+            final_text: raw_text,
+            llm_elapsed,
+            polished: false,
+            polish_fallback_reason: Some(reason.into()),
+            history_output_status,
+            history_output_error,
             voice_execution: None,
         }
     }
@@ -932,6 +997,8 @@ impl PolishTextOutcome {
         Self {
             final_text,
             llm_elapsed,
+            polished: true,
+            polish_fallback_reason: None,
             history_output_status: Some(status.to_string()),
             history_output_error: Some(error.into()),
             voice_execution: None,
@@ -948,6 +1015,8 @@ impl PolishTextOutcome {
         Self {
             final_text,
             llm_elapsed,
+            polished: true,
+            polish_fallback_reason: None,
             history_output_status,
             history_output_error,
             voice_execution: Some(execution),
@@ -1890,6 +1959,22 @@ impl PipelineHandle {
                 return Ok(());
             } // aborted or no speech detected
         };
+        // Deterministic transcript finalization runs after STT and before the
+        // voice-intent router and LLM polish. Built-in developer terminology is
+        // applied first, then enabled user correction rules, so a user rule or
+        // dictionary spelling always wins over the built-in table.
+        let raw_text = crate::stt::terminology::finalize_transcript(
+            &raw_text,
+            config.developer_terminology_enabled,
+            &dictionary_words,
+            correction_rules.iter().map(|rule| {
+                (
+                    rule.pattern.as_str(),
+                    rule.replacement.as_str(),
+                    rule.enabled,
+                )
+            }),
+        );
         let voice_intent =
             route_pipeline_voice_intent(voice_mode, &raw_text, selected_text.as_deref(), &config);
         let stt_elapsed = stop_start.elapsed();
@@ -1924,6 +2009,9 @@ impl PipelineHandle {
             .await;
         let final_text = polish_outcome.final_text;
         let llm_elapsed = polish_outcome.llm_elapsed;
+        if let Some(reason) = polish_outcome.polish_fallback_reason.as_deref() {
+            tracing::warn!("Dictation degraded to the raw transcript: {reason}");
+        }
 
         // ── Phase 3: Timing, history, cleanup ──────────────────────────
         let total_elapsed = stop_start.elapsed();
@@ -1952,6 +2040,8 @@ impl PipelineHandle {
                 "llm_ms": llm_elapsed.as_millis() as u64,
                 "total_ms": total_elapsed.as_millis() as u64,
                 "recording_ms": duration_ms,
+                // False when the LLM step failed and the raw transcript was used.
+                "polished": polish_outcome.polished,
             }),
         );
 
@@ -2121,11 +2211,12 @@ impl PipelineHandle {
 
             // No polishing — output raw text directly
             let output_result = self
-                .output_text(
+                .output_text_for_family(
                     provider_text,
                     &app_ctx.profile.app_label,
                     &app_ctx.target_guard,
                     config,
+                    Some(app_ctx.profile.family),
                 )
                 .await;
             if let Err(error) = &output_result {
@@ -2142,6 +2233,8 @@ impl PipelineHandle {
             return PolishTextOutcome {
                 final_text: provider_text.to_string(),
                 llm_elapsed: std::time::Duration::ZERO,
+                polished: false,
+                polish_fallback_reason: None,
                 history_output_status: output_metadata.status,
                 history_output_error: output_metadata.error,
                 voice_execution: None,
@@ -2166,20 +2259,26 @@ impl PipelineHandle {
             .then(|| streaming_insert_strategy_for_runtime(config, selected_text.as_deref()))
             .flatten();
         let mut streaming_worker = streaming_strategy.map(|strategy| {
-            spawn_streaming_insert_worker(
-                self.app_handle.clone(),
-                self.abort_flag.clone(),
-                self.context_detector.clone(),
+            spawn_streaming_insert_worker(StreamingInsertWorkerContext {
+                app_handle: self.app_handle.clone(),
+                abort_flag: self.abort_flag.clone(),
+                context_detector: self.context_detector.clone(),
                 strategy,
-                output::windows_sendinput::WindowsSendInputOptions {
+                windows_sendinput_options: output::windows_sendinput::WindowsSendInputOptions {
                     newline_mode:
                         output::windows_sendinput::WindowsSendInputNewlineMode::from_config_value(
                             &config.windows_sendinput_newline_mode,
                         ),
+                    terminal_target: output::should_rewrite_newlines_for_terminal(
+                        app_ctx.profile.family,
+                    ),
                 },
-                app_ctx.target_guard.clone(),
-                app_ctx.profile.app_label.clone(),
-            )
+                expected_target_guard: app_ctx.target_guard.clone(),
+                expected_target_label: app_ctx.profile.app_label.clone(),
+                terminal_target: output::should_rewrite_newlines_for_terminal(
+                    app_ctx.profile.family,
+                ),
+            })
         });
         let streaming_sender = streaming_worker
             .as_ref()
@@ -2258,7 +2357,13 @@ impl PipelineHandle {
                                             newline_mode: output::windows_sendinput::WindowsSendInputNewlineMode::from_config_value(
                                                 &config.windows_sendinput_newline_mode,
                                             ),
+                                            terminal_target: output::should_rewrite_newlines_for_terminal(
+                                                app_ctx.profile.family,
+                                            ),
                                         },
+                                        output::should_rewrite_newlines_for_terminal(
+                                            app_ctx.profile.family,
+                                        ),
                                     )
                                     .await
                                     {
@@ -2423,6 +2528,7 @@ impl PipelineHandle {
                     config,
                     already_copied: false,
                     popup_fallback_enabled,
+                    family: Some(app_ctx.profile.family),
                 };
                 let execution = crate::voice_intent::executor::execute_voice_intent(
                     crate::voice_intent::executor::VoiceExecutionRequest {
@@ -2469,10 +2575,17 @@ impl PipelineHandle {
                 let elapsed = llm_start.elapsed();
                 if let Some(report) = streaming_report.as_ref() {
                     if report.has_inserted_text() {
-                        tracing::error!("LLM polish failed after partial streaming insert: {}", e);
+                        tracing::warn!(
+                            "LLM polish failed after partial streaming insert, keeping what was typed: {}",
+                            e
+                        );
+                        // Part of the polished text is already in the target app.
+                        // Re-emitting the raw transcript would duplicate output, so
+                        // keep the partial insert and expose the recovery on the
+                        // clipboard. This is a warning, not an error capsule.
                         let _ = self
                             .app_handle
-                            .emit("pipeline:error", llm_polish_user_error(&e));
+                            .emit("pipeline:warning", llm_polish_fallback_user_error(&e));
                         let mut partial_report = report.clone();
                         partial_report.failed = true;
                         partial_report.error_message = Some(format!("LLM polish failed: {}", e));
@@ -2491,12 +2604,19 @@ impl PipelineHandle {
                             )
                             .await;
                         }
-                        return PolishTextOutcome::with_history_status(
-                            partial_report.inserted_text,
-                            elapsed,
-                            "partial",
-                            format!("LLM polish failed after partial streaming insert: {e}"),
-                        );
+                        return PolishTextOutcome {
+                            final_text: partial_report.inserted_text,
+                            llm_elapsed: elapsed,
+                            polished: false,
+                            polish_fallback_reason: Some(format!(
+                                "LLM polish failed after partial streaming insert: {e}"
+                            )),
+                            history_output_status: Some("partial".to_string()),
+                            history_output_error: Some(format!(
+                                "LLM polish failed after partial streaming insert: {e}"
+                            )),
+                            voice_execution: None,
+                        };
                     }
                 }
 
@@ -2505,27 +2625,46 @@ impl PipelineHandle {
                     tracing::info!("Pipeline aborted after LLM error, skipping output");
                     return PolishTextOutcome::normal(String::new(), elapsed);
                 }
-                tracing::error!("LLM polish failed: {}", e);
-
-                let _ = self
-                    .app_handle
-                    .emit("pipeline:error", llm_polish_user_error(&e));
-                if selected_text_has_content(selected_text_for_execution.as_deref())
-                    || voice_intent_requires_generated_output(voice_intent.kind)
-                {
-                    return PolishTextOutcome::with_history_status(
-                        String::new(),
-                        elapsed,
-                        "fallback",
-                        "LLM generation failed; no application text was changed",
-                    );
+                // Two different failure modes share this arm.
+                match polish_failure_routing(
+                    selected_text_for_execution.as_deref(),
+                    voice_intent.kind,
+                ) {
+                    PolishFailureRouting::NoSafeOutput(reason) => {
+                        // Generated-content operations (rewrite, translate,
+                        // draft, answer) have nothing safe to emit: typing the
+                        // raw instruction into the app would be wrong. Surface
+                        // a real error capsule and leave the app untouched.
+                        tracing::error!("LLM generation failed: {}", e);
+                        let _ = self
+                            .app_handle
+                            .emit("pipeline:error", llm_polish_user_error(&e));
+                        return PolishTextOutcome::with_history_status(
+                            String::new(),
+                            elapsed,
+                            "fallback",
+                            reason,
+                        );
+                    }
+                    PolishFailureRouting::EmitRawTranscript => {
+                        // Plain dictation degrades gracefully: warn (non-
+                        // blocking toast), then type the raw transcript once.
+                        tracing::warn!(
+                            "LLM polish failed, falling back to the raw transcript: {}",
+                            e
+                        );
+                        let _ = self
+                            .app_handle
+                            .emit("pipeline:warning", llm_polish_fallback_user_error(&e));
+                    }
                 }
                 let output_result = self
-                    .output_text(
+                    .output_text_for_family(
                         provider_text,
                         &app_ctx.profile.app_label,
                         &app_ctx.target_guard,
                         config,
+                        Some(app_ctx.profile.family),
                     )
                     .await;
                 if let Err(output_error) = &output_result {
@@ -2540,13 +2679,13 @@ impl PipelineHandle {
                         == output::InsertionStrategy::ClipboardCopyOnly,
                     &format!("LLM polish failed: {e}"),
                 );
-                PolishTextOutcome {
-                    final_text: provider_text.to_string(),
-                    llm_elapsed: elapsed,
-                    history_output_status: output_metadata.status,
-                    history_output_error: output_metadata.error,
-                    voice_execution: None,
-                }
+                PolishTextOutcome::raw_fallback(
+                    provider_text.to_string(),
+                    elapsed,
+                    format!("LLM polish failed: {e}"),
+                    output_metadata.status,
+                    output_metadata.error,
+                )
             }
         };
 
@@ -2603,6 +2742,9 @@ impl PipelineHandle {
             .await;
         self.set_state(PipelineState::Idle);
 
+        if let Some(reason) = outcome.polish_fallback_reason.as_deref() {
+            tracing::warn!("Ask draft degraded to the raw transcript: {reason}");
+        }
         let execution = outcome.voice_execution.ok_or_else(|| {
             "Draft was not generated; no application text was changed".to_string()
         })?;
@@ -2735,6 +2877,7 @@ impl PipelineHandle {
                     output::windows_sendinput::WindowsSendInputNewlineMode::from_config_value(
                         &config.windows_sendinput_newline_mode,
                     ),
+                terminal_target: false,
             },
         )
         .await
@@ -2763,6 +2906,20 @@ impl PipelineHandle {
         app_name: &str,
         target_guard: &TargetAppGuard,
         config: &storage::AppConfig,
+    ) -> Result<output::InsertResult> {
+        self.output_text_for_family(text, app_name, target_guard, config, None)
+            .await
+    }
+
+    /// Output text, scoping the terminal newline rewrite by detected family.
+    /// `None` (unknown / non-recording contexts) never rewrites newlines.
+    async fn output_text_for_family(
+        &self,
+        text: &str,
+        app_name: &str,
+        target_guard: &TargetAppGuard,
+        config: &storage::AppConfig,
+        family: Option<crate::app_detector::types::ContextFamily>,
     ) -> Result<output::InsertResult> {
         self.set_state(PipelineState::Outputting);
 
@@ -2818,8 +2975,9 @@ impl PipelineHandle {
             ),
             auto_paste: true,
         };
+        let terminal_target = family.is_some_and(output::should_rewrite_newlines_for_terminal);
 
-        let mut output_outcome = match output::output_with_strategy(
+        let mut output_outcome = match output::output_with_strategy_for_target(
             &self.app_handle,
             text,
             effective_strategy,
@@ -2829,7 +2987,9 @@ impl PipelineHandle {
                     output::windows_sendinput::WindowsSendInputNewlineMode::from_config_value(
                         &config.windows_sendinput_newline_mode,
                     ),
+                terminal_target,
             },
+            terminal_target,
         )
         .await
         {
@@ -3577,6 +3737,101 @@ mod tests {
             err.details.as_deref(),
             Some("Auth error: Cloud LLM access denied")
         );
+    }
+
+    #[test]
+    fn llm_polish_fallback_warning_uses_toast_safe_code() {
+        let err = llm_polish_fallback_user_error(&crate::error::AppError::LlmQuota(
+            "quota exceeded".to_string(),
+        ));
+        // The warning is rendered from `errors.<code>`; `llm_failed` exists in
+        // every locale and already says the raw text was output instead.
+        assert_eq!(err.code, "llm_failed");
+        assert_eq!(
+            err.details.as_deref(),
+            Some("LLM quota error: quota exceeded")
+        );
+    }
+
+    #[test]
+    fn polish_error_outcome_emits_the_raw_transcript() {
+        let raw = "um so today we discussed the budget and the timeline";
+        let outcome = PolishTextOutcome::raw_fallback(
+            raw.to_string(),
+            123 * std::time::Duration::from_millis(1),
+            "LLM polish failed: provider unavailable".to_string(),
+            Some("fallback".to_string()),
+            Some("LLM polish failed: provider unavailable; output raw text".to_string()),
+        );
+
+        // Degrade gracefully: the final text is exactly the raw STT transcript,
+        // and the outcome is explicitly marked as not polished.
+        assert_eq!(outcome.final_text, raw);
+        assert!(!outcome.polished);
+        assert!(outcome
+            .polish_fallback_reason
+            .as_deref()
+            .is_some_and(|reason| reason.contains("provider unavailable")));
+        // No voice execution, so nothing is inserted a second time by the
+        // executor path.
+        assert!(outcome.voice_execution.is_none());
+    }
+
+    #[test]
+    fn polish_error_outcome_does_not_duplicate_the_raw_transcript() {
+        let raw = "hello world";
+        let outcome = PolishTextOutcome::raw_fallback(
+            raw.to_string(),
+            std::time::Duration::ZERO,
+            "LLM polish failed".to_string(),
+            None,
+            None,
+        );
+
+        // Exactly one copy of the transcript: the fallback outcome carries the
+        // raw text once and the pipeline emits `final_text` a single time.
+        assert_eq!(outcome.final_text.matches(raw).count(), 1);
+        assert_eq!(outcome.final_text, raw);
+    }
+
+    #[test]
+    fn successful_polish_outcome_stays_polished() {
+        let outcome =
+            PolishTextOutcome::normal("Polished text.".to_string(), std::time::Duration::ZERO);
+
+        assert!(outcome.polished);
+        assert!(outcome.polish_fallback_reason.is_none());
+        assert_eq!(outcome.final_text, "Polished text.");
+    }
+
+    #[test]
+    fn plain_dictation_failure_routes_to_the_raw_transcript() {
+        assert_eq!(
+            polish_failure_routing(None, crate::voice_intent::VoiceIntentKind::DictateInsert),
+            PolishFailureRouting::EmitRawTranscript
+        );
+    }
+
+    #[test]
+    fn generated_output_failures_never_emit_raw_instruction_text() {
+        for kind in [
+            crate::voice_intent::VoiceIntentKind::RewriteSelection,
+            crate::voice_intent::VoiceIntentKind::TranslateInsert,
+            crate::voice_intent::VoiceIntentKind::DraftInsert,
+            crate::voice_intent::VoiceIntentKind::OpenQuestion,
+        ] {
+            assert!(matches!(
+                polish_failure_routing(None, kind),
+                PolishFailureRouting::NoSafeOutput(_)
+            ));
+        }
+        assert!(matches!(
+            polish_failure_routing(
+                Some("selected text"),
+                crate::voice_intent::VoiceIntentKind::DictateInsert
+            ),
+            PolishFailureRouting::NoSafeOutput(_)
+        ));
     }
 
     #[test]

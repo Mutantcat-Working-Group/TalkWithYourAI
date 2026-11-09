@@ -169,6 +169,7 @@ mod context_prompt_contract_tests {
     fn prompt_for(context: &ContextProfileSummary) -> String {
         build_context_system_prompt(ContextPromptOptions {
             context,
+            raw_text: "",
             dictionary: &[],
             correction_rules: &[],
             polish_style: "clean",
@@ -258,6 +259,7 @@ mod context_prompt_contract_tests {
         .unwrap();
         let prompt = build_context_system_prompt(ContextPromptOptions {
             context: &context(ContextFamily::Email, None),
+            raw_text: "",
             dictionary: &[],
             correction_rules: &[],
             polish_style: "clean",
@@ -294,6 +296,7 @@ mod context_prompt_contract_tests {
             "prompt_or_code",
             "support",
             "social",
+            "terminal",
         ] {
             assert!(families.contains_key(family), "missing {family} fixture");
         }

@@ -33,6 +33,7 @@ import {
 import { toast } from '../toast-service'
 import { DictionaryImportDialog } from './DictionaryImportDialog'
 import { SegmentedControl } from './shared/SegmentedControl'
+import { Toggle } from './shared/Toggle'
 
 const MAX_IMPORT_BYTES = 1024 * 1024
 
@@ -73,6 +74,8 @@ function downloadText(content: string, format: 'json' | 'csv') {
 export function DictionaryPane() {
   const dictionary = useAppStore((state) => state.dictionary)
   const setDictionary = useAppStore((state) => state.setDictionary)
+  const updateConfig = useAppStore((state) => state.updateConfig)
+  const developerTermsEnabled = useAppStore((state) => state.config.developer_terminology_enabled)
   const correctionRules = useAppStore((state) => state.correctionRules)
   const setCorrectionRules = useAppStore((state) => state.setCorrectionRules)
   const { t } = useTranslation()
@@ -346,6 +349,17 @@ export function DictionaryPane() {
             </>
           )}
         </div>
+      </div>
+
+      <div className="rounded-[10px] border border-border bg-bg-secondary/40 p-3">
+        <Toggle
+          checked={developerTermsEnabled}
+          onChange={(checked) => updateConfig({ developer_terminology_enabled: checked })}
+          label={t('dictionary.developerTerms')}
+        />
+        <p className="mt-1 ml-[52px] text-[11px] leading-relaxed text-text-tertiary">
+          {t('dictionary.developerTermsDesc')}
+        </p>
       </div>
 
       <div className="max-w-[240px]">

@@ -45,6 +45,7 @@ impl LlmProvider for OpenAiProvider {
 
         let system_prompt = prompt::build_context_system_prompt(prompt::ContextPromptOptions {
             context: &req.context,
+            raw_text: &req.raw_text,
             dictionary: &req.dictionary,
             correction_rules: &req.correction_rules,
             polish_style: &req.polish_style,

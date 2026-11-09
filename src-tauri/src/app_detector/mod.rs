@@ -105,6 +105,7 @@ mod app_registry_tests {
             ContextFamily::PromptOrCode,
             ContextFamily::Support,
             ContextFamily::Social,
+            ContextFamily::Terminal,
         ] {
             assert!(registry
                 .profiles()

@@ -4,6 +4,7 @@ pub mod assemblyai;
 pub mod capabilities;
 pub mod config;
 pub mod deepgram;
+pub mod terminology;
 pub mod volcengine;
 pub mod whisper_compat;
 

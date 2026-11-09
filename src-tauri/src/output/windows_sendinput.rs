@@ -63,12 +63,16 @@ impl std::error::Error for TypeError {}
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WindowsSendInputOptions {
     pub newline_mode: WindowsSendInputNewlineMode,
+    /// Terminal/CLI target: newlines are emitted as backslash + Enter so a
+    /// bare Enter never submits a partial command line.
+    pub terminal_target: bool,
 }
 
 impl Default for WindowsSendInputOptions {
     fn default() -> Self {
         Self {
             newline_mode: WindowsSendInputNewlineMode::Enter,
+            terminal_target: false,
         }
     }
 }
@@ -79,7 +83,16 @@ pub struct WindowsSendInputOutput {
 
 impl WindowsSendInputOutput {
     pub fn new(options: WindowsSendInputOptions) -> Self {
-        Self { options }
+        Self::new_terminal(options, false)
+    }
+
+    pub fn new_terminal(options: WindowsSendInputOptions, terminal_target: bool) -> Self {
+        Self {
+            options: WindowsSendInputOptions {
+                terminal_target,
+                ..options
+            },
+        }
     }
 }
 
@@ -90,11 +103,12 @@ impl TextOutput for WindowsSendInputOutput {
         let options = self.options;
         tokio::task::spawn_blocking(move || {
             let result = type_unicode_chunk_with_options(&text, options);
-            let insert_result = map_sendinput_result(&text, result);
+            let insert_result =
+                map_sendinput_result_with_terminal(&text, result, options.terminal_target);
             if insert_result.status == super::InsertStatus::Failed {
                 Err(AppError::Output(format!(
                     "Windows SendInput inserted 0/{} chars",
-                    expected_sendinput_typed_chars(&text)
+                    expected_sendinput_typed_chars_for_terminal(&text, options.terminal_target)
                 )))
             } else {
                 Ok(insert_result)
@@ -113,8 +127,31 @@ pub fn expected_sendinput_typed_chars(text: &str) -> usize {
     text.chars().filter(|ch| *ch != '\r').count()
 }
 
+/// Characters actually sent for `text` when the terminal rewrite is active:
+/// every newline becomes a backslash plus Enter, so one extra character each.
+pub fn expected_sendinput_typed_chars_for_terminal(text: &str, terminal_target: bool) -> usize {
+    if !terminal_target {
+        return expected_sendinput_typed_chars(text);
+    }
+    text.chars()
+        .filter(|ch| *ch != '\r')
+        .map(|ch| match ch {
+            '\n' => 2,
+            _ => 1,
+        })
+        .sum()
+}
+
 pub fn map_sendinput_result(text: &str, result: Result<usize, TypeError>) -> InsertResult {
-    let expected = expected_sendinput_typed_chars(text);
+    map_sendinput_result_with_terminal(text, result, false)
+}
+
+pub fn map_sendinput_result_with_terminal(
+    text: &str,
+    result: Result<usize, TypeError>,
+    terminal_target: bool,
+) -> InsertResult {
+    let expected = expected_sendinput_typed_chars_for_terminal(text, terminal_target);
     match result {
         Ok(typed_chars) if typed_chars == expected => {
             InsertResult::inserted(InsertionStrategy::WindowsSendInput, typed_chars)
@@ -135,12 +172,16 @@ fn type_unicode_chunk_with_options(
     text: &str,
     options: WindowsSendInputOptions,
 ) -> Result<usize, TypeError> {
+    use windows_sys::Win32::UI::Input::KeyboardAndMouse::VK_RETURN;
+
     if text.is_empty() {
         return Ok(0);
     }
 
     super::windows_modifier_guard::wait_for_modifier_release()
         .map_err(|error| TypeError::SendInputFailed(error.to_string()))?;
+
+    let terminal_target = options.terminal_target;
 
     let mut typed_chars = 0usize;
     let mut sent_in_chunk = 0usize;
@@ -152,7 +193,15 @@ fn type_unicode_chunk_with_options(
         }
 
         let result = if ch == '\n' {
-            send_newline(options.newline_mode)
+            if terminal_target {
+                // Line continuation: backslash first, then a plain Enter.
+                // PowerShell and cmd both accept it; unlike Shift+Enter it
+                // works in every host that already uses Shift+Enter itself.
+                send_unicode_char('\\')?;
+                press_vk(VK_RETURN)
+            } else {
+                send_newline(options.newline_mode)
+            }
         } else if ch == '\t' {
             press_vk(windows_sys::Win32::UI::Input::KeyboardAndMouse::VK_TAB)
         } else {
@@ -164,6 +213,10 @@ fn type_unicode_chunk_with_options(
         }
 
         typed_chars += 1;
+        if terminal_target && ch == '\n' {
+            // The rewrite also emits the backslash we just typed.
+            typed_chars += 1;
+        }
         sent_in_chunk += 1;
 
         if sent_in_chunk >= SENDINPUT_CHUNK_CHARS && chars.peek().is_some() {
@@ -298,6 +351,43 @@ fn send_utf16_unit(unit: u16, key_up: bool) -> Result<(), TypeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn terminal_target_counts_the_extra_continuation_backslash() {
+        assert_eq!(
+            expected_sendinput_typed_chars_for_terminal("a\nb", false),
+            3
+        );
+        assert_eq!(expected_sendinput_typed_chars_for_terminal("a\nb", true), 4);
+        assert_eq!(
+            expected_sendinput_typed_chars_for_terminal("a\r\nb", true),
+            4
+        );
+        assert_eq!(expected_sendinput_typed_chars_for_terminal("ab", true), 2);
+    }
+
+    #[test]
+    fn terminal_target_full_send_result_is_not_partial() {
+        // Windows typing itself is only compiled on Windows; assert the
+        // bookkeeping contract the terminal rewrite depends on.
+        assert_eq!(
+            map_sendinput_result_with_terminal("a\nb", Ok(4), true),
+            InsertResult::inserted(InsertionStrategy::WindowsSendInput, 4)
+        );
+        assert_eq!(
+            map_sendinput_result_with_terminal("a\nb", Ok(3), true),
+            InsertResult::partially_inserted(InsertionStrategy::WindowsSendInput, 3)
+        );
+        assert_eq!(
+            map_sendinput_result_with_terminal("a\nb", Ok(4), false),
+            InsertResult::partially_inserted(InsertionStrategy::WindowsSendInput, 4)
+        );
+    }
+
+    #[test]
+    fn default_sendinput_options_do_not_target_a_terminal() {
+        assert!(!WindowsSendInputOptions::default().terminal_target);
+    }
 
     #[test]
     fn expected_typed_chars_skips_carriage_returns_and_counts_unicode_scalars() {

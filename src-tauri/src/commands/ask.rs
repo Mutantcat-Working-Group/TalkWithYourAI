@@ -740,6 +740,25 @@ fn ask_app_error_message(error: AppError) -> String {
     }
 }
 
+/// Ask answers cannot be reconstructed from the raw transcript (the transcript
+/// *is* the question), so an LLM failure keeps the question visible instead of
+/// discarding the dictation. The failure is surfaced as a non-blocking
+/// `pipeline:warning` toast, matching how dictation polish failures degrade.
+fn ask_answer_failure_message(question: &str, error: &str) -> String {
+    format!("AI answer failed: {error}\n\nYour question was kept:\n{question}")
+}
+
+fn emit_ask_llm_warning(app: &tauri::AppHandle, error: &AppError) {
+    let _ = app.emit(
+        "pipeline:warning",
+        crate::error::UserError {
+            code: "llm_failed".to_string(),
+            details: Some(error.to_string()),
+            retry_count: 0,
+        },
+    );
+}
+
 async fn ask_via_byok(
     client: &reqwest::Client,
     config: &storage::AppConfig,
@@ -1174,6 +1193,19 @@ pub async fn stop_ask_dictation(
                 .unwrap_or_else(|e| e.into_inner())
                 .clone(),
         )?;
+        let config = config_state.load().await.map_err(|e| e.to_string())?;
+        let dictionary_store = app.state::<crate::storage::DictionaryStore>();
+        let dictionary_words = dictionary_store.words().await;
+        let enabled_corrections = dictionary_store.enabled_correction_rules().await;
+        let question = crate::stt::terminology::finalize_transcript(
+            &question,
+            config.developer_terminology_enabled,
+            &dictionary_words,
+            enabled_corrections
+                .iter()
+                .map(|rule| (rule.pattern.as_str(), rule.replacement.as_str(), rule.enabled)),
+        );
+        let question = validate_ask_question(&question)?;
         let selected_text_metadata = session
             .selected_text
             .as_deref()
@@ -1183,7 +1215,6 @@ pub async fn stop_ask_dictation(
             .as_ref()
             .is_some_and(|selected_text| selected_text.truncated);
 
-        let config = config_state.load().await.map_err(|e| e.to_string())?;
         let voice_intent = route_ask_intent(
             &question,
             used_selected_text,
@@ -1240,9 +1271,25 @@ pub async fn stop_ask_dictation(
             ));
         }
 
-        let answer = answer_question(&config, &client, &question, session.selected_text.as_deref())
-            .await
-            .map_err(ask_app_error_message)?;
+        // Ask answers cannot be reconstructed from the raw transcript (the
+        // transcript IS the question), so an LLM failure degrades to keeping
+        // the question visible with a non-blocking warning instead of dropping
+        // the whole dictation behind an error capsule.
+        let answer = match answer_question(
+            &config,
+            &client,
+            &question,
+            session.selected_text.as_deref(),
+        )
+        .await
+        {
+            Ok(answer) => answer,
+            Err(error) => {
+                emit_ask_llm_warning(&app, &error);
+                tracing::warn!("Ask answer failed, keeping the question transcript: {error}");
+                ask_answer_failure_message(&question, &ask_app_error_message(error))
+            }
+        };
 
         Ok(AskDictationResult::new(
             question,

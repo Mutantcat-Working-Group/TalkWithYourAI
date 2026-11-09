@@ -628,8 +628,8 @@ describe('LlmPane', () => {
       ]) {
         expect(within(coverage).getByLabelText(name)).toBeInTheDocument()
       }
-      expect(within(coverage).getByText('+63')).toBeInTheDocument()
-      expect(within(coverage).getByText('+65')).toHaveClass('context-app-count--compact')
+      expect(within(coverage).getByText('+73')).toBeInTheDocument()
+      expect(within(coverage).getByText('+75')).toHaveClass('context-app-count--compact')
       expect(within(coverage).getByLabelText('Lark')).toHaveClass('context-app--compact-duplicate')
       expect(within(coverage).getByLabelText('Notion')).toHaveClass(
         'context-app--compact-duplicate',

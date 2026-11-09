@@ -35,6 +35,8 @@ vi.mock('react-i18next', () => ({
         'dictionary.importDuplicates': 'Duplicates',
         'dictionary.importInvalid': 'Invalid',
         'dictionary.confirmImport': 'Import',
+        'dictionary.developerTerms': 'Fix developer terms',
+        'dictionary.developerTermsDesc': 'Automatically correct split technical terms.',
         'common.cancel': 'Cancel',
       }
       return translations[key] || key
@@ -52,6 +54,8 @@ const mockAppStore = {
     enabled: boolean
   }>,
   setCorrectionRules: vi.fn(),
+  config: { developer_terminology_enabled: true },
+  updateConfig: vi.fn(),
 }
 
 vi.mock('../../../stores/appStore', () => ({
@@ -63,6 +67,7 @@ describe('DictionaryPane', () => {
     mockAppStore.dictionary = []
     mockAppStore.correctionRules = []
     vi.clearAllMocks()
+    mockAppStore.config = { developer_terminology_enabled: true }
     vi.mocked(tauri.getDictionary).mockResolvedValue([])
     vi.mocked(tauri.getCorrectionRules).mockResolvedValue([])
     vi.mocked(tauri.addDictionaryEntry).mockResolvedValue(undefined)
@@ -264,5 +269,28 @@ describe('DictionaryPane', () => {
 
     click.mockRestore()
     vi.unstubAllGlobals()
+  })
+
+  it('exposes the built-in developer terminology toggle', () => {
+    render(<DictionaryPane />)
+
+    const toggle = screen.getByRole('switch', { name: 'Fix developer terms' })
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
+
+    fireEvent.click(toggle)
+
+    expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
+      developer_terminology_enabled: false,
+    })
+  })
+
+  it('reflects a disabled developer terminology setting', () => {
+    mockAppStore.config = { developer_terminology_enabled: false }
+    render(<DictionaryPane />)
+
+    expect(screen.getByRole('switch', { name: 'Fix developer terms' })).toHaveAttribute(
+      'aria-checked',
+      'false',
+    )
   })
 })

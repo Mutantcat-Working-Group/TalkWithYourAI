@@ -408,6 +408,7 @@
     "prompt_or_code": "Prompt or code",
     "support": "Support",
     "social": "Social",
+    "terminal": "Terminal",
     "general": "General"
   },
   "dictionary": {
@@ -451,7 +452,9 @@
     "importTooLarge": "Dictionary file exceeds 1 MiB",
     "importFailed": "Failed to import dictionary",
     "importComplete": "Imported {{count}} entries",
-    "exportFailed": "Failed to export dictionary"
+    "exportFailed": "Failed to export dictionary",
+    "developerTerms": "Fix developer terms",
+    "developerTermsDesc": "Automatically correct split technical terms such as \"code x\" to Codex and \"get hub\" to GitHub. Your dictionary and corrections always take priority."
   },
   "scenes": {
     "failedToLoad": "Failed to load scenes.",
@@ -535,7 +538,8 @@
       "developer_collaboration": "Developer collaboration like GitHub and GitLab.",
       "prompt_or_code": "Prompt and code tools like Cursor, VS Code, and JetBrains.",
       "support": "Support tools like Zendesk and Intercom.",
-      "social": "Social apps like X and LinkedIn."
+      "social": "Social apps like X and LinkedIn.",
+      "terminal": "Terminals and CLI tools like Terminal, iTerm2, Warp, and AntShell."
     },
     "systemModes": {
       "email": "Email Format",
@@ -546,7 +550,8 @@
       "developer_collaboration": "Engineering Note",
       "prompt_or_code": "Prompt / Code Request",
       "support": "Support Reply",
-      "social": "Social Post"
+      "social": "Social Post",
+      "terminal": "Terminal Command"
     },
     "systemSceneDescription": "Default writing mode. You can edit it or reset to default.",
     "resetSystemScene": "Reset to default"

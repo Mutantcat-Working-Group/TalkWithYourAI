@@ -366,6 +366,7 @@ fn profile_prefix_matches_family(id: &str, family: ContextFamily) -> bool {
         ContextFamily::PromptOrCode => matches!(prefix, "code" | "prompt"),
         ContextFamily::Support => prefix == "support",
         ContextFamily::Social => prefix == "social",
+        ContextFamily::Terminal => prefix == "terminal",
         ContextFamily::General => prefix == "general",
     }
 }
@@ -539,5 +540,131 @@ mod tests {
         let p95 = samples[9_499];
         println!("registry_500_profiles p95={p95:?}");
         assert!(p95 < std::time::Duration::from_millis(2));
+    }
+}
+
+#[cfg(test)]
+mod terminal_detection_tests {
+    use super::*;
+    use crate::app_detector::types::ContextFamily;
+
+    fn native(identity: &str) -> ContextSignals {
+        ContextSignals {
+            native_identity: Some(identity.to_string()),
+            ..ContextSignals::default()
+        }
+    }
+
+    fn alias(value: &str) -> ContextSignals {
+        ContextSignals {
+            process_alias: Some(value.to_string()),
+            ..ContextSignals::default()
+        }
+    }
+
+    #[test]
+    fn terminal_bundle_ids_classify_as_terminal_family() {
+        let registry = AppRegistry::builtin().unwrap();
+        for bundle_id in [
+            "com.apple.Terminal",
+            "com.googlecode.iterm2",
+            "dev.warp.Warp-Stable",
+            "com.mitchellh.ghostty",
+            "org.alacritty",
+            "net.kovidgoyal.kitty",
+            "com.github.wez.wezterm",
+            "org.mutantcat.antshell",
+        ] {
+            let profile = registry.classify(&native(bundle_id));
+            assert_eq!(
+                profile.family,
+                ContextFamily::Terminal,
+                "{bundle_id} was classified as {:?} ({})",
+                profile.family,
+                profile.id
+            );
+            assert!(profile.family.is_terminal());
+        }
+    }
+
+    #[test]
+    fn terminal_process_aliases_classify_on_windows_and_linux() {
+        let registry = AppRegistry::builtin().unwrap();
+        for process in [
+            "windowsterminal.exe",
+            "powershell.exe",
+            "pwsh.exe",
+            "cmd.exe",
+            "wezterm-gui",
+            "gnome-terminal-server",
+            "konsole",
+            "xterm",
+            "urxvt",
+            "antshell",
+        ] {
+            let profile = registry.classify(&alias(process));
+            assert_eq!(
+                profile.family,
+                ContextFamily::Terminal,
+                "{process} was classified as {:?} ({})",
+                profile.family,
+                profile.id
+            );
+        }
+    }
+
+    #[test]
+    fn antshell_is_treated_like_a_terminal_host() {
+        let registry = AppRegistry::builtin().unwrap();
+        assert_eq!(
+            registry.classify(&native("org.mutantcat.antshell")).id,
+            "terminal.antshell"
+        );
+        assert_eq!(
+            registry.classify(&alias("AntShell")).id,
+            "terminal.antshell"
+        );
+    }
+
+    #[test]
+    fn code_editors_and_chat_apps_are_not_terminals() {
+        let registry = AppRegistry::builtin().unwrap();
+        for identity in [
+            "com.microsoft.vscode",
+            "com.microsoft.vscodeinsiders",
+            "com.todesktop.230313mzl4w4u92",
+            "com.tinyspeck.slackmacgap",
+            "com.apple.mail",
+            "com.google.Chrome",
+        ] {
+            let profile = registry.classify(&native(identity));
+            assert!(
+                !profile.family.is_terminal(),
+                "{identity} must not be treated as a terminal (got {})",
+                profile.id
+            );
+        }
+    }
+
+    #[test]
+    fn unknown_apps_fall_back_to_general_and_never_terminal() {
+        let registry = AppRegistry::builtin().unwrap();
+        let profile = registry.classify(&native("com.example.unknown.app"));
+        assert_eq!(profile.family, ContextFamily::General);
+        assert!(!profile.family.is_terminal());
+        assert!(!ContextFamily::General.is_terminal());
+    }
+
+    #[test]
+    fn near_miss_terminal_bundle_ids_are_not_matched() {
+        let registry = AppRegistry::builtin().unwrap();
+        assert_ne!(
+            registry.classify(&native("com.apple.Terminal.evil")).family,
+            ContextFamily::Terminal
+        );
+        assert_ne!(
+            registry.classify(&alias("evil-terminal")).family,
+            ContextFamily::Terminal
+        );
     }
 }

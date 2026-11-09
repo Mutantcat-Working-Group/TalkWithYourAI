@@ -91,6 +91,14 @@ const APP_WRITING_MODES: Array<{
     ],
   },
   {
+    family: 'terminal',
+    systemSceneId: 'system_terminal',
+    icons: [
+      { label: 'Terminal', iconKey: 'terminal' },
+      { label: 'AntShell', iconKey: 'terminal' },
+    ],
+  },
+  {
     family: 'social',
     systemSceneId: 'system_social',
     icons: [
@@ -119,6 +127,8 @@ const SYSTEM_SCENE_PROMPTS: Record<string, string> = {
     'Support reply system mode: write a clear, empathetic reply. Use short paragraphs or numbered steps when next actions are spoken. Do not invent policy, refund, or resolution claims.',
   system_social:
     "Social post system mode: keep the user's voice and make it readable as a short post. No hashtags, emoji, or calls to action unless spoken.",
+  system_terminal:
+    'Terminal system mode: output plain command-line text only. Keep one command per line, never add markdown, bullets, code fences, explanations, or comments. Preserve flags, paths, and identifiers exactly.',
 }
 
 function systemFamilyForId(id: string): Exclude<ContextFamily, 'general'> {

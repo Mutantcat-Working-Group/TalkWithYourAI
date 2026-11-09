@@ -3,7 +3,10 @@ use enigo::{Direction, Enigo, Key, Keyboard, Settings};
 
 use crate::error::AppError;
 
-use super::{InsertResult, InsertionStrategy, OutputMode, TextOutput};
+use super::{
+    terminal_line_continuation_segments, InsertResult, InsertionStrategy, NewlineSegment,
+    OutputMode, TextOutput,
+};
 
 /// Maximum characters per enigo.text() call to avoid input buffer overflow.
 const TYPE_CHUNK_SIZE: usize = 200;
@@ -122,21 +125,33 @@ pub fn check_keyboard_available() -> std::result::Result<(), String> {
 pub struct KeyboardOutput {
     #[cfg(target_os = "macos")]
     app_handle: tauri::AppHandle,
+    /// Terminal/CLI target: newlines are emitted as backslash + Enter so a
+    /// bare Enter never submits a partial command line.
+    terminal_mode: bool,
 }
 
 impl KeyboardOutput {
     pub fn new(app_handle: &tauri::AppHandle) -> Self {
+        Self::with_terminal_mode(app_handle, false)
+    }
+
+    pub fn new_terminal(app_handle: &tauri::AppHandle) -> Self {
+        Self::with_terminal_mode(app_handle, true)
+    }
+
+    fn with_terminal_mode(app_handle: &tauri::AppHandle, terminal_mode: bool) -> Self {
         #[cfg(target_os = "macos")]
         {
             Self {
                 app_handle: app_handle.clone(),
+                terminal_mode,
             }
         }
 
         #[cfg(not(target_os = "macos"))]
         {
             let _ = app_handle;
-            Self {}
+            Self { terminal_mode }
         }
     }
 
@@ -144,12 +159,13 @@ impl KeyboardOutput {
     async fn type_text_on_main_thread(&self, text: &str) -> Result<(), AppError> {
         let text = text.to_string();
         let timeout = macos_type_timeout(&text);
+        let terminal_mode = self.terminal_mode;
         let app_handle = self.app_handle.clone();
         let (tx, rx) = tokio::sync::oneshot::channel();
 
         app_handle
             .run_on_main_thread(move || {
-                let result = type_text_sync(&text);
+                let result = type_text_sync_with_terminal_mode(&text, terminal_mode);
                 let _ = tx.send(result);
             })
             .map_err(|e| {
@@ -189,9 +205,12 @@ impl TextOutput for KeyboardOutput {
         #[cfg(not(target_os = "macos"))]
         {
             let text = text.to_string();
-            tokio::task::spawn_blocking(move || type_text_sync(&text))
-                .await
-                .map_err(|e| AppError::Output(format!("Spawn blocking error: {}", e)))??;
+            let terminal_mode = self.terminal_mode;
+            tokio::task::spawn_blocking(move || {
+                type_text_sync_with_terminal_mode(&text, terminal_mode)
+            })
+            .await
+            .map_err(|e| AppError::Output(format!("Spawn blocking error: {}", e)))??;
             Ok(InsertResult::inserted(
                 InsertionStrategy::Keyboard,
                 chars_inserted,
@@ -204,20 +223,28 @@ impl TextOutput for KeyboardOutput {
     }
 }
 
-fn type_text_sync(text: &str) -> Result<(), AppError> {
+fn type_text_sync_with_terminal_mode(text: &str, terminal_mode: bool) -> Result<(), AppError> {
     super::windows_modifier_guard::wait_for_modifier_release()?;
 
     #[cfg(target_os = "linux")]
     match detect_linux_keyboard_backend().map_err(|reason| {
         AppError::Output(format!("Linux keyboard backend unavailable: {reason}"))
     })? {
-        LinuxKeyboardBackend::Wtype => return type_text_with_wtype(text),
-        LinuxKeyboardBackend::Kwtype => return type_text_with_kwtype(text),
+        LinuxKeyboardBackend::Wtype => {
+            return type_text_with_wtype(text, terminal_mode);
+        }
+        LinuxKeyboardBackend::Kwtype => {
+            return type_text_with_kwtype(text, terminal_mode);
+        }
         LinuxKeyboardBackend::Xdotool => {}
     }
 
     let mut enigo = Enigo::new(&Settings::default())
         .map_err(|e| AppError::Output(format!("Failed to create Enigo: {:?}", e)))?;
+
+    if terminal_mode {
+        return type_segments(&mut enigo, &terminal_segments(text));
+    }
 
     let lines: Vec<&str> = text.split('\n').collect();
     for (i, line) in lines.iter().enumerate() {
@@ -246,11 +273,75 @@ fn type_text_sync(text: &str) -> Result<(), AppError> {
     Ok(())
 }
 
+/// Text handed to external typing tools (wtype/kwtype), which type a newline
+/// character as a bare Return. Prepend a literal backslash so the shell sees a
+/// line continuation instead of submitting the command.
+#[cfg(any(target_os = "linux", test))]
+fn terminal_text_for_tool(text: &str, terminal_mode: bool) -> String {
+    if !terminal_mode {
+        return text.to_string();
+    }
+    terminal_line_continuation_segments(text, true)
+        .unwrap_or_default()
+        .into_iter()
+        .map(|segment| match segment {
+            // The rewrite already queued the backslash as a Literal, so the
+            // Return segment only needs to become a newline character here.
+            NewlineSegment::Literal(ch) => ch.to_string(),
+            NewlineSegment::Return => "\n".to_string(),
+        })
+        .collect()
+}
+
+/// Split text into the segments produced by the terminal line-continuation
+/// rewrite. Callers already know `terminal_mode` is true.
+fn terminal_segments(text: &str) -> Vec<NewlineSegment> {
+    terminal_line_continuation_segments(text, true).unwrap_or_default()
+}
+
+/// Type a pre-planned segment list through enigo.
+///
+/// Literal runs are sent with `text()` in chunks; each `Return` segment is a
+/// plain Enter key press, preceded by the literal backslash the caller queued
+/// so the shell treats it as a line continuation instead of a submit.
+fn type_segments(enigo: &mut Enigo, segments: &[NewlineSegment]) -> Result<(), AppError> {
+    let mut pending: Vec<char> = Vec::new();
+
+    let flush = |enigo: &mut Enigo, pending: &mut Vec<char>| {
+        while !pending.is_empty() {
+            let chunk: String = pending
+                .drain(..TYPE_CHUNK_SIZE.min(pending.len()))
+                .collect();
+            enigo
+                .text(&chunk)
+                .map_err(|e| AppError::Output(format!("Failed to type text: {:?}", e)))?;
+            std::thread::sleep(std::time::Duration::from_millis(TYPE_CHUNK_DELAY_MS));
+        }
+        Ok::<(), AppError>(())
+    };
+
+    for segment in segments {
+        match segment {
+            NewlineSegment::Literal(ch) => pending.push(*ch),
+            NewlineSegment::Return => {
+                flush(enigo, &mut pending)?;
+                // Plain Enter, not Shift+Enter: the literal backslash already
+                // on screen turns this into a shell line continuation.
+                enigo
+                    .key(Key::Return, Direction::Click)
+                    .map_err(|e| AppError::Output(format!("Key error: {:?}", e)))?;
+            }
+        }
+    }
+    flush(enigo, &mut pending)
+}
+
 #[cfg(target_os = "linux")]
-fn type_text_with_wtype(text: &str) -> Result<(), AppError> {
+fn type_text_with_wtype(text: &str, terminal_mode: bool) -> Result<(), AppError> {
     use std::io::Write;
     use std::process::{Command, Stdio};
 
+    let text = terminal_text_for_tool(text, terminal_mode);
     let mut child = Command::new("wtype")
         .args(["-d", "1", "-"])
         .stdin(Stdio::piped())
@@ -303,10 +394,11 @@ fn kwtype_chunks(text: &str) -> Vec<String> {
 }
 
 #[cfg(any(target_os = "linux", test))]
-fn type_text_with_kwtype(text: &str) -> Result<(), AppError> {
+fn type_text_with_kwtype(text: &str, terminal_mode: bool) -> Result<(), AppError> {
     use std::process::{Command, Stdio};
 
-    for chunk in kwtype_chunks(text) {
+    let text = terminal_text_for_tool(text, terminal_mode);
+    for chunk in kwtype_chunks(&text) {
         let output = Command::new("kwtype")
             .arg("--")
             .arg(chunk)
@@ -351,6 +443,19 @@ fn macos_type_timeout(text: &str) -> std::time::Duration {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn terminal_text_for_tools_prepends_a_backslash_to_each_newline() {
+        let text = terminal_text_for_tool("echo hi\necho bye", true);
+
+        assert_eq!(text, "echo hi\\\necho bye");
+    }
+
+    #[test]
+    fn terminal_text_for_tools_leaves_non_terminal_text_alone() {
+        let text = "echo hi\necho bye";
+        assert_eq!(terminal_text_for_tool(text, false), text);
+    }
 
     #[test]
     fn wayland_uses_wtype_when_installed() {
@@ -417,6 +522,6 @@ mod tests {
 
     #[test]
     fn kwtype_empty_text_is_a_noop() {
-        assert!(type_text_with_kwtype("").is_ok());
+        assert!(type_text_with_kwtype("", false).is_ok());
     }
 }

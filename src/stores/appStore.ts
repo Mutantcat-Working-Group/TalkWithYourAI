@@ -65,6 +65,7 @@ export type ContextFamily =
   | 'prompt_or_code'
   | 'support'
   | 'social'
+  | 'terminal'
   | 'general'
 export type BrowserAccessStatus = 'available' | 'needs_permission' | 'not_applicable' | 'unknown'
 export type BrowserTarget = 'safari' | 'chrome' | 'edge' | 'brave' | 'arc'
@@ -237,6 +238,7 @@ export interface AppConfig {
   history_max_entries: number
   ui_language: string
   capsule_auto_hide: boolean
+  developer_terminology_enabled: boolean
 }
 
 export type TestStatus = 'idle' | 'testing' | 'success' | 'error'
@@ -797,6 +799,7 @@ const defaultConfig: AppConfig = {
   history_max_entries: 5000,
   ui_language: 'en',
   capsule_auto_hide: true,
+  developer_terminology_enabled: true,
 }
 
 export const useAppStore = create<AppState>((set) => ({

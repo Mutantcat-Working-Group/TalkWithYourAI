@@ -376,6 +376,7 @@ pub struct AppConfig {
     pub history_max_entries: u32,
     pub ui_language: String,
     pub capsule_auto_hide: bool,
+    pub developer_terminology_enabled: bool,
 }
 
 impl Default for AppConfig {
@@ -432,6 +433,7 @@ impl Default for AppConfig {
             history_max_entries: DEFAULT_HISTORY_MAX_ENTRIES,
             ui_language: "en".to_string(),
             capsule_auto_hide: false,
+            developer_terminology_enabled: true,
         }
     }
 }
@@ -993,6 +995,9 @@ fn system_scene_prompt(scene_id: &str) -> Option<&'static str> {
         "system_social" => Some(
             "Social post system mode: keep the user's voice and make it readable as a short post. No hashtags, emoji, or calls to action unless spoken.",
         ),
+        "system_terminal" => Some(
+            "Terminal system mode: output plain command-line text only. Keep one command per line, never add markdown, bullets, code fences, explanations, or comments. Preserve flags, paths, and identifiers exactly.",
+        ),
         _ => None,
     }
 }
@@ -1084,6 +1089,7 @@ fn default_system_scene_id_for_family(family: ContextFamily) -> Option<&'static 
         ContextFamily::PromptOrCode => Some("system_prompt_or_code"),
         ContextFamily::Support => Some("system_support"),
         ContextFamily::Social => Some("system_social"),
+        ContextFamily::Terminal => Some("system_terminal"),
         ContextFamily::General => None,
     }
 }
@@ -1656,6 +1662,7 @@ fn context_family_db_value(family: ContextFamily) -> &'static str {
         ContextFamily::PromptOrCode => "prompt_or_code",
         ContextFamily::Support => "support",
         ContextFamily::Social => "social",
+        ContextFamily::Terminal => "terminal",
         ContextFamily::General => "general",
     }
 }
@@ -1671,6 +1678,7 @@ fn context_family_from_db(value: &str) -> ContextFamily {
         "prompt_or_code" => ContextFamily::PromptOrCode,
         "support" => ContextFamily::Support,
         "social" => ContextFamily::Social,
+        "terminal" => ContextFamily::Terminal,
         _ => ContextFamily::General,
     }
 }

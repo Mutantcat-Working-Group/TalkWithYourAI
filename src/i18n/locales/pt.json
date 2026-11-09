@@ -408,6 +408,7 @@
     "prompt_or_code": "Instrução ou código",
     "support": "Atendimento ao cliente",
     "social": "Redes sociais",
+    "terminal": "Terminal",
     "general": "Geral"
   },
   "dictionary": {
@@ -451,7 +452,9 @@
     "importTooLarge": "O arquivo excede 1 MiB",
     "importFailed": "Falha ao importar dicionário",
     "importComplete": "{{count}} entradas importadas",
-    "exportFailed": "Falha ao exportar dicionário"
+    "exportFailed": "Falha ao exportar dicionário",
+    "developerTerms": "Corrigir termos técnicos",
+    "developerTermsDesc": "Corrige automaticamente termos técnicos divididos como \"code x\" para Codex e \"get hub\" para GitHub. Seu dicionário e correções sempre têm prioridade."
   },
   "scenes": {
     "failedToLoad": "Falha ao carregar cenas.",
@@ -535,7 +538,8 @@
       "developer_collaboration": "Colaboração de desenvolvimento como GitHub e GitLab.",
       "prompt_or_code": "Ferramentas de prompt e código como Cursor, VS Code e JetBrains.",
       "support": "Ferramentas de suporte como Zendesk e Intercom.",
-      "social": "Apps sociais como X e LinkedIn."
+      "social": "Apps sociais como X e LinkedIn.",
+      "terminal": "Terminais e ferramentas de CLI como Terminal, iTerm2, Warp e AntShell."
     },
     "systemModes": {
       "email": "Formato de email",
@@ -546,7 +550,8 @@
       "developer_collaboration": "Nota de engenharia",
       "prompt_or_code": "Pedido de prompt / código",
       "support": "Resposta de suporte",
-      "social": "Post social"
+      "social": "Post social",
+      "terminal": "Comando de terminal"
     },
     "systemSceneDescription": "Modo de escrita padrão. Você pode editar ou restaurar o padrão.",
     "resetSystemScene": "Restaurar padrão"

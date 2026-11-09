@@ -408,6 +408,7 @@
     "prompt_or_code": "提示词或代码",
     "support": "客户支持",
     "social": "社交",
+    "terminal": "终端",
     "general": "通用"
   },
   "dictionary": {
@@ -451,7 +452,9 @@
     "importTooLarge": "词典文件超过 1 MiB",
     "importFailed": "导入词典失败",
     "importComplete": "已导入 {{count}} 项",
-    "exportFailed": "导出词典失败"
+    "exportFailed": "导出词典失败",
+    "developerTerms": "修正开发者术语",
+    "developerTermsDesc": "自动将“code x”等被拆开的术语修正为 Codex，“get hub”修正为 GitHub。你的词典和纠正规则始终优先。"
   },
   "scenes": {
     "failedToLoad": "加载场景失败。",
@@ -535,7 +538,8 @@
       "developer_collaboration": "GitHub、GitLab 等开发协作工具。",
       "prompt_or_code": "Cursor、VS Code、JetBrains 等提示词和代码工具。",
       "support": "Zendesk、Intercom 等客服工具。",
-      "social": "X、LinkedIn 等社交应用。"
+      "social": "X、LinkedIn 等社交应用。",
+      "terminal": "终端和命令行工具，如 Terminal、iTerm2、Warp 和 AntShell。"
     },
     "systemModes": {
       "email": "邮件格式",
@@ -546,7 +550,8 @@
       "developer_collaboration": "工程备注",
       "prompt_or_code": "提示词 / 代码请求",
       "support": "客服回复",
-      "social": "社交短帖"
+      "social": "社交短帖",
+      "terminal": "终端命令"
     },
     "systemSceneDescription": "默认写法，可编辑，也可以恢复默认。",
     "resetSystemScene": "恢复默认"

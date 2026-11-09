@@ -42,10 +42,10 @@ export function ContextAdaptationApps({ disabled }: { disabled: boolean }) {
         </span>
       ))}
       <span className="context-app-count--full ml-0.5 flex-none text-[11px] text-text-tertiary">
-        +63
+        +73
       </span>
       <span className="context-app-count--compact ml-0.5 flex-none text-[11px] text-text-tertiary">
-        +65
+        +75
       </span>
     </div>
   )

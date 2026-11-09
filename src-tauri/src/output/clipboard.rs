@@ -273,6 +273,17 @@ fn simulate_paste(shortcut: PasteShortcut) -> Result<(), AppError> {
     }
 }
 
+/// Clipboard output deliberately does not apply the terminal line-continuation
+/// rewrite. Two reasons:
+///
+/// 1. The clipboard is also the user-facing "copy" fallback, so its contents
+///    must stay exactly the generated text (a backslash injected for terminals
+///    would corrupt copy-only output and history/paste reuse).
+/// 2. Paste into a terminal never submits on its own: the pasted text is held
+///    in the terminal's line editor until the user presses Enter, so a plain
+///    newline pastes as a multi-line buffer rather than running each line.
+///    Users who need line continuations in a terminal should use the keyboard
+///    strategy, which performs the rewrite at typing time.
 #[async_trait]
 impl TextOutput for ClipboardOutput {
     async fn type_text(&self, text: &str) -> Result<InsertResult, AppError> {

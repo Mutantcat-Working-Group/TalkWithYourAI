@@ -12,6 +12,7 @@
     "developer_collaboration": { "forbiddenAdditions": ["commit", "pull request"] },
     "prompt_or_code": { "forbiddenAdditions": ["```", "implementation"] },
     "support": { "forbiddenAdditions": ["refund", "policy"] },
-    "social": { "forbiddenAdditions": ["#", "emoji"] }
+    "social": { "forbiddenAdditions": ["#", "emoji"] },
+    "terminal": { "forbiddenAdditions": ["```", "markdown"] }
   }
 }

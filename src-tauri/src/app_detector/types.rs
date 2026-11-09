@@ -14,7 +14,19 @@ pub enum ContextFamily {
     PromptOrCode,
     Support,
     Social,
+    Terminal,
     General,
+}
+
+impl ContextFamily {
+    /// True only for app families whose text surface submits a command line
+    /// on a bare Enter key press (shells, terminal emulators, CLI managers).
+    ///
+    /// Output uses this to emit a shell line continuation instead of a plain
+    /// newline. Unknown apps fall back to `General`, so they never qualify.
+    pub fn is_terminal(self) -> bool {
+        matches!(self, Self::Terminal)
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

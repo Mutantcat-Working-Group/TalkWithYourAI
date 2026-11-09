@@ -133,6 +133,67 @@ pub trait TextOutput: Send + Sync {
     fn mode(&self) -> OutputMode;
 }
 
+/// A single emitted character in a terminal line-continuation rewrite.
+///
+/// Text-mode output writes `Literal` chars without key simulation and sends
+/// `Return` as one Enter key press.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum NewlineSegment {
+    Literal(char),
+    Return,
+}
+
+/// Rewrite newlines for terminal/CLI targets.
+///
+/// A dictation typed into a shell must never carry a bare Enter: that would
+/// submit the (partial) command. Instead every `\n` becomes a literal
+/// backslash followed by Enter, which POSIX shells, PowerShell, and cmd all
+/// accept as a line continuation. Non-terminal and unknown targets receive
+/// `None` and therefore keep their normal newline behaviour.
+///
+/// Only applies to the keyboard insertion paths. The clipboard fallback keeps
+/// the original text (see `clipboard`).
+pub fn terminal_line_continuation_segments(
+    text: &str,
+    terminal_target: bool,
+) -> Option<Vec<NewlineSegment>> {
+    if !terminal_target {
+        return None;
+    }
+
+    let mut segments = Vec::with_capacity(text.chars().count());
+    let mut chars = text.chars().peekable();
+    while let Some(ch) = chars.next() {
+        match ch {
+            '\r' => {
+                // Normalise CRLF/CR to one line break that still continues
+                // the command rather than submitting it.
+                if chars.peek() != Some(&'\n') {
+                    segments.push(NewlineSegment::Literal('\\'));
+                    segments.push(NewlineSegment::Return);
+                }
+            }
+            '\n' => {
+                segments.push(NewlineSegment::Literal('\\'));
+                segments.push(NewlineSegment::Return);
+            }
+            other => segments.push(NewlineSegment::Literal(other)),
+        }
+    }
+    Some(segments)
+}
+
+/// True when the keyboard path must apply the terminal rewrite.
+///
+/// The rewrite is scoped by the detected app family, so unknown apps
+/// (`ContextFamily::General` fallback) and normal apps (chat, email, docs,
+/// editors) never take this branch.
+pub fn should_rewrite_newlines_for_terminal(
+    family: crate::app_detector::types::ContextFamily,
+) -> bool {
+    family.is_terminal()
+}
+
 pub fn create_output(mode: OutputMode, app_handle: &tauri::AppHandle) -> Box<dyn TextOutput> {
     create_output_with_clipboard_options(
         mode,
@@ -197,9 +258,37 @@ pub async fn output_with_strategy(
     clipboard_options: clipboard::ClipboardOutputOptions,
     windows_sendinput_options: windows_sendinput::WindowsSendInputOptions,
 ) -> Result<OutputOutcome, String> {
-    let keyboard = create_output(OutputMode::Keyboard, app_handle);
-    let windows_sendinput =
-        windows_sendinput::WindowsSendInputOutput::new(windows_sendinput_options);
+    output_with_strategy_for_target(
+        app_handle,
+        text,
+        strategy,
+        clipboard_options,
+        windows_sendinput_options,
+        false,
+    )
+    .await
+}
+
+/// Like `output_with_strategy`, but advertises that the foreground target is a
+/// terminal/CLI surface when `terminal_target` is true. Only the keyboard
+/// insertion paths then rewrite `\n` as backslash + Enter.
+pub async fn output_with_strategy_for_target(
+    app_handle: &tauri::AppHandle,
+    text: &str,
+    strategy: InsertionStrategy,
+    clipboard_options: clipboard::ClipboardOutputOptions,
+    windows_sendinput_options: windows_sendinput::WindowsSendInputOptions,
+    terminal_target: bool,
+) -> Result<OutputOutcome, String> {
+    let keyboard: Box<dyn TextOutput> = if terminal_target {
+        Box::new(keyboard::KeyboardOutput::new_terminal(app_handle))
+    } else {
+        create_output(OutputMode::Keyboard, app_handle)
+    };
+    let windows_sendinput = windows_sendinput::WindowsSendInputOutput::new_terminal(
+        windows_sendinput_options,
+        terminal_target,
+    );
     let clipboard_paste =
         create_output_with_clipboard_options(OutputMode::Clipboard, app_handle, clipboard_options);
     let clipboard_copy = create_output_with_clipboard_options(
@@ -228,17 +317,25 @@ pub async fn output_stream_chunk(
     text: &str,
     strategy: InsertionStrategy,
     windows_sendinput_options: windows_sendinput::WindowsSendInputOptions,
+    terminal_target: bool,
 ) -> Result<InsertResult, String> {
     match strategy.direct_streaming_strategy() {
-        Some(InsertionStrategy::Keyboard) => create_output(OutputMode::Keyboard, app_handle)
+        Some(InsertionStrategy::Keyboard) => {
+            let keyboard: Box<dyn TextOutput> = if terminal_target {
+                Box::new(keyboard::KeyboardOutput::new_terminal(app_handle))
+            } else {
+                create_output(OutputMode::Keyboard, app_handle)
+            };
+            keyboard.type_text(text).await.map_err(|e| e.to_string())
+        }
+        Some(InsertionStrategy::WindowsSendInput) => {
+            windows_sendinput::WindowsSendInputOutput::new_terminal(
+                windows_sendinput_options,
+                terminal_target,
+            )
             .type_text(text)
             .await
-            .map_err(|e| e.to_string()),
-        Some(InsertionStrategy::WindowsSendInput) => {
-            windows_sendinput::WindowsSendInputOutput::new(windows_sendinput_options)
-                .type_text(text)
-                .await
-                .map_err(|e| e.to_string())
+            .map_err(|e| e.to_string())
         }
         _ => Err(format!(
             "Insertion strategy {:?} does not support streaming chunks",
@@ -460,6 +557,89 @@ mod tests {
         fn mode(&self) -> OutputMode {
             self.mode
         }
+    }
+
+    fn rendered(segments: &[NewlineSegment]) -> String {
+        segments
+            .iter()
+            .map(|segment| match segment {
+                NewlineSegment::Literal(ch) => *ch,
+                NewlineSegment::Return => '\n',
+            })
+            .collect()
+    }
+
+    #[test]
+    fn terminal_newline_rewrite_emits_backslash_before_every_enter() {
+        let segments = terminal_line_continuation_segments("git commit -m \"fix\"\nls -la", true)
+            .expect("terminal targets rewrite newlines");
+
+        assert_eq!(rendered(&segments), "git commit -m \"fix\"\\\nls -la");
+        // The backslash and the Return always travel together.
+        for (index, segment) in segments.iter().enumerate() {
+            if *segment == NewlineSegment::Return {
+                assert_eq!(segments[index - 1], NewlineSegment::Literal('\\'));
+            }
+        }
+    }
+
+    #[test]
+    fn terminal_newline_rewrite_keeps_single_line_text_untouched() {
+        let segments = terminal_line_continuation_segments("docker ps", true).unwrap();
+
+        assert_eq!(rendered(&segments), "docker ps");
+        assert!(!segments.contains(&NewlineSegment::Return));
+    }
+
+    #[test]
+    fn terminal_newline_rewrite_handles_crlf_and_trailing_newline() {
+        let crlf = terminal_line_continuation_segments("a\r\nb", true).unwrap();
+        assert_eq!(rendered(&crlf), "a\\\nb");
+
+        let trailing = terminal_line_continuation_segments("a\n", true).unwrap();
+        assert_eq!(rendered(&trailing), "a\\\n");
+    }
+
+    #[test]
+    fn non_terminal_apps_keep_plain_newlines() {
+        for family in [
+            crate::app_detector::types::ContextFamily::WorkChat,
+            crate::app_detector::types::ContextFamily::Email,
+            crate::app_detector::types::ContextFamily::PromptOrCode,
+            crate::app_detector::types::ContextFamily::Document,
+        ] {
+            assert!(!should_rewrite_newlines_for_terminal(family));
+            assert_eq!(
+                terminal_line_continuation_segments("one\ntwo", family.is_terminal()),
+                None
+            );
+        }
+    }
+
+    #[test]
+    fn unknown_apps_do_not_rewrite_newlines() {
+        // General is the fallback family for apps the detector does not know.
+        let family = crate::app_detector::types::ContextFamily::General;
+        assert!(!should_rewrite_newlines_for_terminal(family));
+        assert_eq!(terminal_line_continuation_segments("one\ntwo", false), None);
+    }
+
+    #[test]
+    fn slack_and_gmail_style_text_survives_the_normal_path_unchanged() {
+        let text = "Line one\nLine two";
+        assert_eq!(text, "Line one\nLine two");
+        assert_eq!(
+            terminal_line_continuation_segments(text, false),
+            None,
+            "a non-terminal target must never rewrite newlines"
+        );
+    }
+
+    #[test]
+    fn terminal_families_request_the_rewrite() {
+        assert!(should_rewrite_newlines_for_terminal(
+            crate::app_detector::types::ContextFamily::Terminal
+        ));
     }
 
     #[test]

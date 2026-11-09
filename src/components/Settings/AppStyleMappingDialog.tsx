@@ -15,6 +15,7 @@ const CONTEXT_FAMILIES: ContextFamily[] = [
   'prompt_or_code',
   'support',
   'social',
+  'terminal',
   'general',
 ]
 

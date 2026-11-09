@@ -113,6 +113,16 @@ impl ContextPolicy {
                 preserve_technical_tokens: false,
                 forbidden_additions: &["hashtag", "emoji", "call to action"],
             },
+            ContextFamily::Terminal => Self {
+                artifact_kind: Prompt,
+                formality: Neutral,
+                density: Compact,
+                markup: PlainText,
+                list_behavior: Preserve,
+                sentence_completeness: false,
+                preserve_technical_tokens: true,
+                forbidden_additions: &["markdown", "code fence", "commentary"],
+            },
             ContextFamily::General => Self {
                 artifact_kind: Prose,
                 formality: Neutral,
@@ -163,6 +173,9 @@ impl ContextPolicy {
             }
             ContextFamily::Social => {
                 "Social: keep the user's voice and make it readable as a short post. No hashtags, emoji, or calls to action unless spoken."
+            }
+            ContextFamily::Terminal => {
+                "Terminal: output plain command-line text only. Keep one command per line, never add markdown, bullets, code fences, explanations, or comments. Preserve flags, paths, and identifiers exactly."
             }
             ContextFamily::General => {
                 "General: lightly polish into directly usable prose without assuming an artifact type."

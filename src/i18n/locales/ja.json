@@ -408,6 +408,7 @@
     "prompt_or_code": "指示またはコード",
     "support": "カスタマーサポート",
     "social": "ソーシャル",
+    "terminal": "ターミナル",
     "general": "一般"
   },
   "dictionary": {
@@ -451,7 +452,9 @@
     "importTooLarge": "辞書ファイルが 1 MiB を超えています",
     "importFailed": "辞書のインポートに失敗しました",
     "importComplete": "{{count}} 件をインポートしました",
-    "exportFailed": "辞書のエクスポートに失敗しました"
+    "exportFailed": "辞書のエクスポートに失敗しました",
+    "developerTerms": "開発者用語を修正",
+    "developerTermsDesc": "「code x」のような分割された技術用語を Codex に、「get hub」を GitHub に自動修正します。辞書と修正ルールが常に優先されます。"
   },
   "scenes": {
     "failedToLoad": "シーンの読み込みに失敗しました。",
@@ -535,7 +538,8 @@
       "developer_collaboration": "GitHub、GitLab などの開発コラボレーション。",
       "prompt_or_code": "Cursor、VS Code、JetBrains などのプロンプト/コードツール。",
       "support": "Zendesk、Intercom などのサポートツール。",
-      "social": "X、LinkedIn などのソーシャルアプリ。"
+      "social": "X、LinkedIn などのソーシャルアプリ。",
+      "terminal": "Terminal、iTerm2、Warp、AntShell などのターミナルと CLI ツール。"
     },
     "systemModes": {
       "email": "メール形式",
@@ -546,7 +550,8 @@
       "developer_collaboration": "エンジニアリングメモ",
       "prompt_or_code": "プロンプト / コード依頼",
       "support": "サポート返信",
-      "social": "ソーシャル投稿"
+      "social": "ソーシャル投稿",
+      "terminal": "ターミナルコマンド"
     },
     "systemSceneDescription": "既定の書き方です。編集したり既定値に戻したりできます。",
     "resetSystemScene": "既定値に戻す"

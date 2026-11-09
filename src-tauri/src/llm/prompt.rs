@@ -68,6 +68,19 @@ const THOUGHT_AWARE_RULES: &str = r#"Treat disfluency conservatively:
 const CUSTOM_PROMPT_MAX_CHARS: usize = 2000;
 const ACTIVE_SCENE_PROMPT_MAX_CHARS: usize = 4000;
 
+/// A dictation counts as "long" once it exceeds this many CJK characters
+/// (Han, kana, or Hangul), roughly a 30-second spoken paragraph.
+const LONG_DICTATION_CJK_CHAR_THRESHOLD: usize = 180;
+
+/// A dictation also counts as "long" once it exceeds this many
+/// whitespace-separated words. Used for space-delimited languages.
+const LONG_DICTATION_WORD_THRESHOLD: usize = 60;
+
+/// Default formatting hint for long, multi-point dictations. It is only a
+/// hint: any later polish style, scene, personal style, or custom polish
+/// instruction wins when it asks for another layout.
+const LONG_DICTATION_BULLET_INSTRUCTION: &str = "\n\n[LONG_DICTATION_FORMAT] The transcription is long. When it covers multiple distinct points or topics, break those points into a short bulleted list: each bullet on its own line, starting with \"- \", one point per bullet. Keep a single continuous thought as prose. If the speaker explicitly enumerated items (第一/第二, first/second, 1. 2.), keep the numbered list instead. Never invent bullets, split a sentence mid-thought, or drop content. This is a default formatting hint only: a later polish style, app writing mode, scene, or custom polish instruction wins when it asks for another layout.";
+
 pub struct SystemPromptOptions<'a> {
     pub app_type: AppType,
     pub dictionary: &'a [String],
@@ -83,6 +96,9 @@ pub struct SystemPromptOptions<'a> {
 
 pub struct ContextPromptOptions<'a> {
     pub context: &'a ContextProfileSummary,
+    /// Raw STT transcript. Used only to decide whether the long-dictation
+    /// formatting hint applies; it is never interpolated into the prompt.
+    pub raw_text: &'a str,
     pub dictionary: &'a [String],
     pub correction_rules: &'a [CorrectionRule],
     pub polish_style: &'a str,
@@ -108,6 +124,7 @@ pub fn build_system_prompt(
     let context = legacy_context_summary(app_type);
     build_context_system_prompt(ContextPromptOptions {
         context: &context,
+        raw_text: "",
         dictionary,
         correction_rules: &[],
         polish_style: "clean",
@@ -126,6 +143,7 @@ pub fn build_system_prompt_with_scene(options: SystemPromptOptions<'_>) -> Strin
     let context = legacy_context_summary(options.app_type);
     build_context_system_prompt(ContextPromptOptions {
         context: &context,
+        raw_text: "",
         dictionary: options.dictionary,
         correction_rules: options.correction_rules,
         polish_style: options.polish_style,
@@ -143,6 +161,7 @@ pub fn build_system_prompt_with_scene(options: SystemPromptOptions<'_>) -> Strin
 pub fn build_context_system_prompt(options: ContextPromptOptions<'_>) -> String {
     let ContextPromptOptions {
         context,
+        raw_text,
         dictionary,
         correction_rules,
         polish_style,
@@ -199,9 +218,15 @@ pub fn build_context_system_prompt(options: ContextPromptOptions<'_>) -> String 
         prompt.push_str("No reviewed app-specific override. Use the semantic family policy.");
     }
 
-    prompt.push_str("\n\n[BUILTIN_POLISH_STYLE]");
     let has_scene_prompt =
         !mapped_scene_prompt.trim().is_empty() || !active_scene_prompt.trim().is_empty();
+
+    // Emitted BEFORE [BUILTIN_POLISH_STYLE] so every later section — the user's
+    // polish style, personal style, mapped scene, manual scene, and custom
+    // polish — can still override this default layout hint.
+    append_long_dictation_format_prompt(&mut prompt, raw_text, has_selected_text, has_scene_prompt);
+
+    prompt.push_str("\n\n[BUILTIN_POLISH_STYLE]");
     if has_selected_text {
         prompt.push_str(
             "\nSkipped because the spoken selected-text instruction owns the transformation.",
@@ -417,6 +442,46 @@ fn append_polish_style_prompt(prompt: &mut String, polish_style: &str) {
     prompt.push_str(addon);
 }
 
+/// Counts characters written without spaces between words, so one long CJK
+/// sentence is not mistaken for a handful of "words".
+fn cjk_char_count(text: &str) -> usize {
+    text.chars()
+        .filter(|character| {
+            matches!(
+                *character as u32,
+                0x3040..=0x30FF     // Hiragana + Katakana
+                | 0x3400..=0x4DBF   // CJK Unified Ideographs Extension A
+                | 0x4E00..=0x9FFF   // CJK Unified Ideographs
+                | 0xAC00..=0xD7AF   // Hangul syllables
+                | 0xF900..=0xFAFF   // CJK Compatibility Ideographs
+                | 0x20000..=0x2FA1F // CJK Extension B+ and compatibility supplement
+            )
+        })
+        .count()
+}
+
+/// True once a dictation crosses either threshold documented above.
+/// Deliberately conservative: short dictation keeps plain prose.
+fn is_long_dictation(raw_text: &str) -> bool {
+    cjk_char_count(raw_text) >= LONG_DICTATION_CJK_CHAR_THRESHOLD
+        || raw_text.split_whitespace().count() >= LONG_DICTATION_WORD_THRESHOLD
+}
+
+fn append_long_dictation_format_prompt(
+    prompt: &mut String,
+    raw_text: &str,
+    has_selected_text: bool,
+    has_scene_prompt: bool,
+) {
+    // Selected-text instructions own the transformation, and an app writing
+    // mode or scene owns the output shape. A bullet hint would fight that
+    // explicit intent, so it is omitted entirely in both modes.
+    if has_selected_text || has_scene_prompt || !is_long_dictation(raw_text) {
+        return;
+    }
+    prompt.push_str(LONG_DICTATION_BULLET_INSTRUCTION);
+}
+
 fn append_dictionary_prompt(prompt: &mut String, dictionary: &[String]) {
     if dictionary.is_empty() {
         return;
@@ -597,6 +662,7 @@ mod tests {
                     crate::app_detector::types::BrowserAccessStatus::NotApplicable,
                 browser_target: None,
             },
+            raw_text: "",
             dictionary: &[],
             correction_rules: &[],
             polish_style: "clean",
@@ -622,6 +688,7 @@ mod tests {
                     crate::app_detector::types::BrowserAccessStatus::NotApplicable,
                 browser_target: None,
             },
+            raw_text: "",
             dictionary: &[],
             correction_rules: &[],
             polish_style: "clean",
@@ -649,6 +716,7 @@ mod tests {
                     crate::app_detector::types::BrowserAccessStatus::NotApplicable,
                 browser_target: None,
             },
+            raw_text: "",
             dictionary: &[],
             correction_rules: &[],
             polish_style: "clean",
@@ -700,6 +768,7 @@ mod tests {
                     crate::app_detector::types::BrowserAccessStatus::NotApplicable,
                 browser_target: None,
             },
+            raw_text: "",
             dictionary: &[],
             correction_rules: &[],
             polish_style: "clean",
@@ -732,6 +801,7 @@ mod tests {
                     crate::app_detector::types::BrowserAccessStatus::NotApplicable,
                 browser_target: None,
             },
+            raw_text: "",
             dictionary: &[],
             correction_rules: &[],
             polish_style: "clean",
@@ -1120,6 +1190,143 @@ mod tests {
         assert!(prompt.contains("work communication"));
         assert!(prompt.contains("Do not add empty pleasantries"));
         assert!(prompt.contains("Do not expand one sentence into a long business message"));
+    }
+
+    fn prompt_for_raw_text(raw_text: &str) -> String {
+        build_context_system_prompt(ContextPromptOptions {
+            context: &ContextProfileSummary {
+                profile_id: "general.native".to_string(),
+                family: ContextFamily::General,
+                app_label: "General".to_string(),
+                icon_key: "general".to_string(),
+                override_id: None,
+                browser_access_status:
+                    crate::app_detector::types::BrowserAccessStatus::NotApplicable,
+                browser_target: None,
+            },
+            raw_text,
+            dictionary: &[],
+            correction_rules: &[],
+            polish_style: "clean",
+            personal_style_prompt: "",
+            mapped_scene_prompt: "",
+            active_scene_prompt: "",
+            polish_custom_prompt: "",
+            translate_enabled: false,
+            target_lang: "",
+            has_selected_text: false,
+            voice_intent: None,
+        })
+    }
+
+    fn general_context() -> ContextProfileSummary {
+        ContextProfileSummary {
+            profile_id: "general.native".to_string(),
+            family: ContextFamily::General,
+            app_label: "General".to_string(),
+            icon_key: "general".to_string(),
+            override_id: None,
+            browser_access_status: crate::app_detector::types::BrowserAccessStatus::NotApplicable,
+            browser_target: None,
+        }
+    }
+
+    #[test]
+    fn long_dictation_prompt_contains_bullet_instruction() {
+        let long_cjk = "今天开会讨论了几个事情。".repeat(20);
+        assert!(long_cjk.chars().count() > LONG_DICTATION_CJK_CHAR_THRESHOLD);
+
+        let cjk_prompt = prompt_for_raw_text(&long_cjk);
+        assert!(cjk_prompt.contains("[LONG_DICTATION_FORMAT]"));
+        assert!(cjk_prompt.contains("bulleted list"));
+
+        let long_english =
+            "first we discussed the roadmap then the budget and finally the hiring plan ".repeat(8);
+        assert!(
+            long_english.split_whitespace().count() > LONG_DICTATION_WORD_THRESHOLD,
+            "fixture must exceed the word threshold"
+        );
+
+        let english_prompt = prompt_for_raw_text(&long_english);
+        assert!(english_prompt.contains("[LONG_DICTATION_FORMAT]"));
+        assert!(english_prompt.contains("bulleted list"));
+    }
+
+    #[test]
+    fn short_dictation_prompt_omits_bullet_instruction() {
+        let short_cjk = prompt_for_raw_text("我觉得这个方案还不错，就是价格有点贵");
+        assert!(!short_cjk.contains("[LONG_DICTATION_FORMAT]"));
+        assert!(!short_cjk.contains("bulleted list"));
+
+        let short_english = prompt_for_raw_text("Today I had a meeting with the team");
+        assert!(!short_english.contains("[LONG_DICTATION_FORMAT]"));
+    }
+
+    #[test]
+    fn long_dictation_hint_is_emitted_exactly_once() {
+        let long_text =
+            "first we discussed the roadmap then the budget and finally hiring ".repeat(10);
+        let prompt = prompt_for_raw_text(&long_text);
+
+        assert_eq!(prompt.matches("[LONG_DICTATION_FORMAT]").count(), 1);
+    }
+
+    #[test]
+    fn long_dictation_hint_is_skipped_for_selected_text_and_scene_modes() {
+        let long_text =
+            "first we discussed the roadmap then the budget and finally hiring ".repeat(10);
+
+        let selected = build_context_system_prompt(ContextPromptOptions {
+            context: &general_context(),
+            raw_text: &long_text,
+            dictionary: &[],
+            correction_rules: &[],
+            polish_style: "clean",
+            personal_style_prompt: "",
+            mapped_scene_prompt: "",
+            active_scene_prompt: "",
+            polish_custom_prompt: "",
+            translate_enabled: false,
+            target_lang: "",
+            has_selected_text: true,
+            voice_intent: None,
+        });
+        assert!(!selected.contains("[LONG_DICTATION_FORMAT]"));
+
+        let scene = build_context_system_prompt(ContextPromptOptions {
+            context: &general_context(),
+            raw_text: &long_text,
+            dictionary: &[],
+            correction_rules: &[],
+            polish_style: "clean",
+            personal_style_prompt: "",
+            mapped_scene_prompt: "Use an email body with concise bullets.",
+            active_scene_prompt: "",
+            polish_custom_prompt: "",
+            translate_enabled: false,
+            target_lang: "",
+            has_selected_text: false,
+            voice_intent: None,
+        });
+        assert!(!scene.contains("[LONG_DICTATION_FORMAT]"));
+    }
+
+    #[test]
+    fn long_dictation_hint_precedes_and_defers_to_polish_style() {
+        let long_text =
+            "first we discussed the roadmap then the budget and finally hiring ".repeat(10);
+        let prompt = prompt_for_raw_text(&long_text);
+
+        let hint_pos = prompt.find("[LONG_DICTATION_FORMAT]").unwrap();
+        let style_pos = prompt.find("POLISH STYLE: Clean").unwrap();
+        assert!(hint_pos < style_pos);
+        assert!(prompt.contains("wins when it asks for another layout"));
+    }
+
+    #[test]
+    fn long_dictation_detection_ignores_whitespace_padding_and_counts_cjk() {
+        assert!(!is_long_dictation("   \n\t  short thought   "));
+        assert_eq!(cjk_char_count("ab中文"), 2);
     }
 
     #[test]

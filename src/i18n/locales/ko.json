@@ -408,6 +408,7 @@
     "prompt_or_code": "지침 또는 코드",
     "support": "고객 지원",
     "social": "소셜",
+    "terminal": "터미널",
     "general": "일반"
   },
   "dictionary": {
@@ -451,7 +452,9 @@
     "importTooLarge": "사전 파일이 1 MiB를 초과합니다",
     "importFailed": "사전을 가져오지 못했습니다",
     "importComplete": "{{count}}개 항목을 가져왔습니다",
-    "exportFailed": "사전을 내보내지 못했습니다"
+    "exportFailed": "사전을 내보내지 못했습니다",
+    "developerTerms": "개발자 용어 수정",
+    "developerTermsDesc": "\"code x\" 같은 분리된 기술 용어를 Codex로, \"get hub\"를 GitHub로 자동 수정합니다. 사전과 수정 규칙이 항상 우선합니다."
   },
   "scenes": {
     "failedToLoad": "씬을 불러오지 못했습니다.",
@@ -535,7 +538,8 @@
       "developer_collaboration": "GitHub, GitLab 같은 개발 협업.",
       "prompt_or_code": "Cursor, VS Code, JetBrains 같은 프롬프트와 코드 도구.",
       "support": "Zendesk, Intercom 같은 지원 도구.",
-      "social": "X, LinkedIn 같은 소셜 앱."
+      "social": "X, LinkedIn 같은 소셜 앱.",
+      "terminal": "Terminal, iTerm2, Warp, AntShell 같은 터미널과 CLI 도구."
     },
     "systemModes": {
       "email": "이메일 형식",
@@ -546,7 +550,8 @@
       "developer_collaboration": "엔지니어링 노트",
       "prompt_or_code": "프롬프트 / 코드 요청",
       "support": "지원 답변",
-      "social": "소셜 게시글"
+      "social": "소셜 게시글",
+      "terminal": "터미널 명령"
     },
     "systemSceneDescription": "기본 글쓰기 모드입니다. 편집하거나 기본값으로 되돌릴 수 있습니다.",
     "resetSystemScene": "기본값으로 재설정"

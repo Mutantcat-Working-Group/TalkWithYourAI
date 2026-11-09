@@ -408,6 +408,7 @@
     "prompt_or_code": "Инструкция или код",
     "support": "Поддержка",
     "social": "Социальные сети",
+    "terminal": "Терминал",
     "general": "Общие"
   },
   "dictionary": {
@@ -451,7 +452,9 @@
     "importTooLarge": "Файл словаря превышает 1 МиБ",
     "importFailed": "Не удалось импортировать словарь",
     "importComplete": "Импортировано записей: {{count}}",
-    "exportFailed": "Не удалось экспортировать словарь"
+    "exportFailed": "Не удалось экспортировать словарь",
+    "developerTerms": "Исправлять технические термины",
+    "developerTermsDesc": "Автоматически исправляет разделённые термины, например «code x» на Codex и «get hub» на GitHub. Словарь и правила исправлений всегда в приоритете."
   },
   "scenes": {
     "failedToLoad": "Не удалось загрузить сцены.",
@@ -535,7 +538,8 @@
       "developer_collaboration": "Разработка и совместная работа, например GitHub и GitLab.",
       "prompt_or_code": "Инструменты промптов и кода, например Cursor, VS Code и JetBrains.",
       "support": "Инструменты поддержки, например Zendesk и Intercom.",
-      "social": "Социальные приложения, например X и LinkedIn."
+      "social": "Социальные приложения, например X и LinkedIn.",
+      "terminal": "Терминалы и CLI-инструменты, например Terminal, iTerm2, Warp и AntShell."
     },
     "systemModes": {
       "email": "Формат письма",
@@ -546,7 +550,8 @@
       "developer_collaboration": "Инженерная заметка",
       "prompt_or_code": "Запрос промпта / кода",
       "support": "Ответ поддержки",
-      "social": "Социальный пост"
+      "social": "Социальный пост",
+      "terminal": "Команда терминала"
     },
     "systemSceneDescription": "Режим письма по умолчанию. Его можно изменить или сбросить.",
     "resetSystemScene": "Сбросить по умолчанию"

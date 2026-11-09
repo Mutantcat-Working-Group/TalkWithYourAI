@@ -408,6 +408,7 @@
     "prompt_or_code": "Consigne ou code",
     "support": "Assistance",
     "social": "Réseaux sociaux",
+    "terminal": "Terminal",
     "general": "Général"
   },
   "dictionary": {
@@ -451,7 +452,9 @@
     "importTooLarge": "Le fichier dépasse 1 Mio",
     "importFailed": "Impossible d'importer le dictionnaire",
     "importComplete": "{{count}} entrées importées",
-    "exportFailed": "Impossible d'exporter le dictionnaire"
+    "exportFailed": "Impossible d'exporter le dictionnaire",
+    "developerTerms": "Corriger les termes techniques",
+    "developerTermsDesc": "Corrige automatiquement les termes techniques scindés comme « code x » en Codex et « get hub » en GitHub. Votre dictionnaire et vos corrections restent prioritaires."
   },
   "scenes": {
     "failedToLoad": "Impossible de charger les scènes.",
@@ -535,7 +538,8 @@
       "developer_collaboration": "Collaboration developpeur comme GitHub et GitLab.",
       "prompt_or_code": "Outils de prompt et de code comme Cursor, VS Code et JetBrains.",
       "support": "Outils de support comme Zendesk et Intercom.",
-      "social": "Apps sociales comme X et LinkedIn."
+      "social": "Apps sociales comme X et LinkedIn.",
+      "terminal": "Terminaux et outils CLI comme Terminal, iTerm2, Warp et AntShell."
     },
     "systemModes": {
       "email": "Format e-mail",
@@ -546,7 +550,8 @@
       "developer_collaboration": "Note d ingenierie",
       "prompt_or_code": "Demande prompt / code",
       "support": "Reponse support",
-      "social": "Publication sociale"
+      "social": "Publication sociale",
+      "terminal": "Commande de terminal"
     },
     "systemSceneDescription": "Mode de redaction par defaut. Vous pouvez le modifier ou le reinitialiser.",
     "resetSystemScene": "Reinitialiser par defaut"
