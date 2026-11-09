@@ -220,14 +220,34 @@ jobs:
           # version inside the checksum files.
           version="$(node -p "require('./package.json').version")"
           echo "Checksumming version ${version}"
-          outdir="$(mktemp -d)"
+          # A repo-relative directory, not mktemp: the Windows runner's mktemp
+          # returns a path upload-artifact cannot resolve, which silently
+          # dropped every Windows checksum file.
+          outdir="checksums-out"
+          rm -rf "$outdir"
+          mkdir -p "$outdir"
           echo "outdir=$outdir" >> "$GITHUB_OUTPUT"
+          # Resolve digest tools per platform: Linux has md5sum/sha1sum, macOS
+          # has shasum (and md5), Windows Git Bash has the coreutils ones.
+          if command -v md5sum >/dev/null 2>&1; then
+            md5_of() { md5sum "$1" | awk '{print $1}'; }
+          elif command -v md5 >/dev/null 2>&1; then
+            md5_of() { md5 -q "$1"; }
+          else
+            echo "::error::No MD5 tool available"; exit 1
+          fi
+          if command -v sha1sum >/dev/null 2>&1; then
+            sha1_of() { sha1sum "$1" | awk '{print $1}'; }
+          else
+            sha1_of() { shasum -a 1 "$1" | awk '{print $1}'; }
+          fi
+          size_of() { stat -c%s "$1" 2>/dev/null || stat -f%z "$1" 2>/dev/null || wc -c < "$1"; }
           total=0
           while IFS= read -r file; do
             name="$(basename "$file")"
-            md5="$(md5sum "$file" | awk '{print $1}')"
-            sha1="$(sha1sum "$file" | awk '{print $1}')"
-            size="$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file")"
+            md5="$(md5_of "$file")"
+            sha1="$(sha1_of "$file")"
+            size="$(size_of "$file")"
             dest="${outdir}/${name}.checksums.txt"
             {
               echo "# ${name}"
@@ -268,7 +288,7 @@ jobs:
             src-tauri/target/**/release/bundle/nsis/*.exe
             src-tauri/target/**/release/bundle/deb/*.deb
             src-tauri/target/**/release/bundle/macos/*.tar.gz
-            ${{ steps.checksums.outputs.outdir }}/*
+            checksums-out/*
 
       - name: Upload AppImage (optional)
         if: matrix.platform_group == 'linux'
@@ -279,7 +299,7 @@ jobs:
           retention-days: 14
           path: |
             src-tauri/target/release/bundle/appimage/*.AppImage
-            ${{ steps.checksums.outputs.outdir }}/*
+            checksums-out/*
 
       - name: Upload updater signatures
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
