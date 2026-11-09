@@ -1,8 +1,7 @@
 import React from 'react'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { MainLayout } from '../index'
-import { useCloudServiceStore } from '../../../stores/cloudServiceStore'
 
 const MOTION_PROPS = new Set([
   'initial',
@@ -38,30 +37,18 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) =>
       ({
-        'app.name': 'OpenTypeless',
+        'app.name': 'TalkWithYourAI',
         'app.tagline': 'AI Voice Input',
         'nav.home': 'Home',
-        'nav.ask': 'Ask',
         'nav.settings': 'Settings',
         'nav.history': 'History',
-        'nav.upgrade': 'Upgrade',
-        'nav.account': 'Account',
         'nav.mainNavigation': 'Main navigation',
-        'cloudRecovery.sttBody': 'Cloud speech unavailable · audio was not resent',
-        'cloudRecovery.tryAgain': 'Try again',
-        'cloudRecovery.openSttSettings': 'Settings',
       })[key] ?? key,
   }),
 }))
 
-vi.mock('../../../stores/authStore', () => ({
-  hasManagedCloudAccess: () => false,
-  useAuthStore: (selector: any) => (typeof selector === 'function' ? selector({}) : {}),
-}))
-
 afterEach(() => {
   cleanup()
-  useCloudServiceStore.setState({ incident: null })
   window.location.hash = ''
 })
 
@@ -76,24 +63,17 @@ describe('MainLayout', () => {
     expect(screen.queryByRole('button', { name: 'Ask' })).not.toBeInTheDocument()
   })
 
-  it('keeps a managed-cloud failure visible with manual recovery actions', () => {
-    useCloudServiceStore.setState({
-      incident: { kind: 'stt', code: 'stt_failed', occurredAt: '2026-08-26T10:00:00.000Z' },
-    })
+  it('does not show account or upgrade navigation items', () => {
     render(
       <MainLayout>
         <div>content</div>
       </MainLayout>,
     )
 
-    const banner = screen.getByTestId('cloud-service-banner')
-    expect(
-      within(banner).getByText('Cloud speech unavailable · audio was not resent'),
-    ).toBeInTheDocument()
-    fireEvent.click(within(banner).getByRole('button', { name: /Settings/ }))
-    expect(window.location.hash).toBe('#/settings?pane=stt')
-
-    fireEvent.click(within(banner).getByRole('button', { name: /Try again/ }))
-    expect(screen.queryByTestId('cloud-service-banner')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /account/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /upgrade/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Home' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Settings' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'History' })).toBeInTheDocument()
   })
 })

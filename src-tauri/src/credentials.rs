@@ -4,11 +4,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::storage::AppConfig;
 
-const SERVICE_NAME: &str = "OpenTypeless";
+const SERVICE_NAME: &str = "TalkWithYourAI";
 const API_KEY_ACCOUNT_SUFFIX: &str = "api_key";
 const STORED_CREDENTIAL_VERSION: u8 = 1;
-const CLOUD_SESSION_NAMESPACE: &str = "session";
-const CLOUD_SESSION_PROVIDER: &str = "cloud";
 
 pub trait CredentialVault {
     fn set_secret(&self, namespace: &str, provider: &str, secret: &str) -> Result<()>;
@@ -102,30 +100,6 @@ impl CredentialSecretRemover for SystemCredentialVault {
     fn remove_secret(&self, namespace: &str, provider: &str) -> Result<()> {
         Self::remove_secret(self, namespace, provider)
     }
-}
-
-pub fn load_cloud_session_token<V: CredentialSecretReader>(vault: &V) -> Result<Option<String>> {
-    Ok(vault
-        .get_secret(CLOUD_SESSION_NAMESPACE, CLOUD_SESSION_PROVIDER)?
-        .filter(|token| !token.trim().is_empty()))
-}
-
-pub fn store_cloud_session_token<V: CredentialVault + CredentialSecretReader>(
-    vault: &V,
-    token: &str,
-) -> Result<()> {
-    if token.trim().is_empty() {
-        return Err(anyhow!("cloud session token is empty"));
-    }
-    vault.set_secret(CLOUD_SESSION_NAMESPACE, CLOUD_SESSION_PROVIDER, token)?;
-    if load_cloud_session_token(vault)?.as_deref() != Some(token) {
-        return Err(anyhow!("cloud session vault verification failed"));
-    }
-    Ok(())
-}
-
-pub fn remove_cloud_session_token<V: CredentialSecretRemover>(vault: &V) -> Result<()> {
-    vault.remove_secret(CLOUD_SESSION_NAMESPACE, CLOUD_SESSION_PROVIDER)
 }
 
 #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
@@ -472,6 +446,40 @@ mod tests {
             );
         }
         assert_eq!(vault.records().len(), writes_before_save);
+    }
+
+    #[test]
+    fn custom_llm_endpoint_uses_its_own_vault_entry_and_survives_config_roundtrip() {
+        let mut config = AppConfig {
+            llm_provider: crate::llm::CUSTOM_LLM_PROVIDER.to_string(),
+            llm_api_key: String::new(),
+            llm_base_url: "http://192.168.1.44:8000/v1".to_string(),
+            llm_model: "local-model".to_string(),
+            ..AppConfig::default()
+        };
+        let vault = MemoryVault::default();
+        vault
+            .set_secret("llm", crate::llm::CUSTOM_LLM_PROVIDER, "custom-llm-secret")
+            .unwrap();
+
+        // Base URL and model persist through the storage (de)serialization path.
+        let stored = serde_json::to_value(&config).unwrap();
+        let restored = AppConfig::from_stored_value(stored).unwrap();
+        assert_eq!(restored.llm_base_url, "http://192.168.1.44:8000/v1");
+        assert_eq!(restored.llm_model, "local-model");
+        assert_eq!(restored.llm_provider, crate::llm::CUSTOM_LLM_PROVIDER);
+
+        assert_eq!(
+            resolve_llm_config_secret(&restored, &vault).unwrap(),
+            "custom-llm-secret"
+        );
+
+        // A settings save must not clobber the user-supplied endpoint.
+        config.llm_base_url = "http://10.0.0.2:8000/v1".to_string();
+        config.normalize_values();
+        assert_eq!(config.llm_base_url, "http://10.0.0.2:8000/v1");
+        assert_eq!(config.llm_model, "local-model");
+        assert_eq!(config.llm_provider, crate::llm::CUSTOM_LLM_PROVIDER);
     }
 
     #[test]

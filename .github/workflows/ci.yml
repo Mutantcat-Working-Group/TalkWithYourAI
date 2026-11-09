@@ -77,7 +77,7 @@ jobs:
       - name: Verify pinned Linux packaging tools
         if: matrix.platform_group == 'linux'
         env:
-          XDG_CACHE_HOME: ${{ runner.temp }}/opentypeless-packaging-tools
+          XDG_CACHE_HOME: ${{ runner.temp }}/talkwithyourai-packaging-tools
         run: ./.github/scripts/prepare-linuxdeploy-wrapper.sh "$(uname -m)"
 
       - run: cargo fmt --check --manifest-path src-tauri/Cargo.toml

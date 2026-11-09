@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- Local-only BYOK conversion: removed the account, subscription, and managed-cloud layer entirely. The app now runs without sign-in, without a backend service, and without any authorization or telemetry checks; speech recognition and AI polish are driven only by the user's own provider, API key, and base URL.
+- Rebranded to TalkWithYourAI (product name, bundle identifier `org.mutantcat.talkwithyourai`, window titles, tray menu, and user-facing copy). See `LICENSE` and `THIRD_PARTY_NOTICES.md` for the retained upstream attribution.
+- The updater endpoint now points at this repository's releases. The updater public key must be replaced with a key generated for this project before the first public release.
+- Repository cleanup: removed the 16 non-Chinese/English READMEs, upstream-only release signing scripts, upstream funding configuration, and upstream design/release documents under `docs/`. Only `README.md` and `README_zh.md` are maintained from now on.
+
 ## [1.1.48] - 2026-07-08
 
 ### Added

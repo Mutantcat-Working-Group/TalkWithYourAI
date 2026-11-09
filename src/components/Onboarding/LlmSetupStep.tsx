@@ -4,6 +4,8 @@ import { useAppStore, type LlmProvider } from '../../stores/appStore'
 import {
   LLM_DEFAULT_CONFIG,
   ONBOARDING_LLM_PROVIDERS,
+  isCustomLlmProvider,
+  llmDefaultsForProvider,
   llmProviderRequiresApiKey,
 } from '../../lib/constants'
 import { testLlmConnection, fetchLlmModels } from '../../lib/tauri'
@@ -27,14 +29,20 @@ export function LlmSetupStep() {
     ? config.llm_provider
     : fallbackProvider
   const requiresApiKey = llmProviderRequiresApiKey(selectedProvider)
+  const isCustomProvider = isCustomLlmProvider(selectedProvider)
 
   useEffect(() => {
     if (selectedProvider === config.llm_provider) return
-    const defaults = LLM_DEFAULT_CONFIG[selectedProvider]
+    const defaults = llmDefaultsForProvider(
+      selectedProvider,
+      config.llm_base_url,
+      config.llm_model,
+      config.llm_provider,
+    )
     updateConfig({
       llm_provider: selectedProvider,
-      llm_base_url: defaults?.baseUrl ?? config.llm_base_url,
-      llm_model: defaults?.model ?? config.llm_model,
+      llm_base_url: defaults.baseUrl,
+      llm_model: defaults.model,
     })
     setLlmTestStatus('idle')
     setModels([])
@@ -94,11 +102,16 @@ export function LlmSetupStep() {
           value={selectedProvider}
           onChange={(e) => {
             const provider = e.target.value as typeof config.llm_provider
-            const defaults = LLM_DEFAULT_CONFIG[provider]
+            const defaults = llmDefaultsForProvider(
+              provider,
+              config.llm_base_url,
+              config.llm_model,
+              config.llm_provider,
+            )
             updateConfig({
               llm_provider: provider,
-              llm_base_url: defaults?.baseUrl ?? config.llm_base_url,
-              llm_model: defaults?.model ?? config.llm_model,
+              llm_base_url: defaults.baseUrl,
+              llm_model: defaults.model,
             })
             setLlmTestStatus('idle')
             setModels([])
@@ -113,8 +126,14 @@ export function LlmSetupStep() {
         </select>
       </Field>
 
-      {requiresApiKey && (
-        <Field label={t('onboarding.llm.apiKeyLabel')}>
+      {(requiresApiKey || isCustomProvider) && (
+        <Field
+          label={
+            isCustomProvider
+              ? t('settings.customSttApiKeyOptional')
+              : t('onboarding.llm.apiKeyLabel')
+          }
+        >
           <div className="flex gap-2">
             <input
               type="password"
@@ -128,7 +147,12 @@ export function LlmSetupStep() {
             />
             <button
               onClick={handleTest}
-              disabled={!config.llm_api_key || llmTestStatus === 'testing'}
+              disabled={
+                (!config.llm_api_key && !isCustomProvider) ||
+                !config.llm_base_url ||
+                (isCustomProvider && !config.llm_model.trim()) ||
+                llmTestStatus === 'testing'
+              }
               className="px-4 py-2.5 bg-accent text-white rounded-[10px] text-[13px] border-none cursor-pointer hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
             >
               {llmTestStatus === 'testing' && <Loader2 size={14} className="animate-spin" />}
@@ -183,7 +207,7 @@ export function LlmSetupStep() {
             }
             className="min-w-0 flex-1 px-3 py-2.5 bg-bg-secondary border border-border rounded-[10px] text-[13px] text-text-primary outline-none focus:border-border-focus transition-colors"
           />
-          {!requiresApiKey && (
+          {!requiresApiKey && !isCustomProvider && (
             <button
               type="button"
               onClick={handleTest}
@@ -195,7 +219,7 @@ export function LlmSetupStep() {
             </button>
           )}
         </div>
-        {!requiresApiKey && <TestStatusHint status={llmTestStatus} />}
+        {!requiresApiKey && !isCustomProvider && <TestStatusHint status={llmTestStatus} />}
       </Field>
     </div>
   )

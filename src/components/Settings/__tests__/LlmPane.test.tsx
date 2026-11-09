@@ -12,7 +12,6 @@ vi.mock('react-i18next', () => ({
     t: (key: string, params?: any) => {
       const translations: Record<string, string> = {
         'settings.provider': 'Provider',
-        'nav.upgrade': 'Upgrade',
         'settings.apiKey': 'API Key',
         'settings.model': 'Model',
         'settings.baseUrl': 'Base URL',
@@ -56,12 +55,6 @@ vi.mock('react-i18next', () => ({
         'settings.selectedTextContextDesc': 'Use selected text for context',
         'settings.targetLanguage': 'Translate to',
         'settings.manageTranslationTargets': 'Manage languages',
-        'settings.cloudLlmPro': 'Cloud LLM (Pro)',
-        'settings.llmSignInHint':
-          'Sign in and subscribe to Pro to use cloud AI polish. No API key needed.',
-        'settings.llmUpgradeHint':
-          'Upgrade to Pro for cloud AI polish and monthly usage. No API key needed.',
-        'settings.llmProActive': 'Pro active — cloud AI polish is ready. No API key needed.',
         'settings.askAnything': 'Ask Anything',
         'settings.askAnythingDesc': 'Voice question, one-shot answer. No chat history.',
         'ask.ready': 'Ready to ask',
@@ -77,6 +70,8 @@ vi.mock('react-i18next', () => ({
         'ask.stopAndAsk': 'Stop and ask',
         'ask.send': 'Ask',
         'providers.llm.doubao': 'Doubao (Volcengine)',
+        'settings.customSttPresetCustom': 'Custom OpenAI-compatible',
+        'settings.customSttApiKeyOptional': 'API Key (optional)',
       }
       return translations[key] || key
     },
@@ -115,37 +110,12 @@ const mockAppStore = {
   lastContext: null as any,
 }
 
-const mockAuthStore = {
-  user: null as any,
-  plan: null as any,
-  source: 'free',
-  cloudWordsLimit: 0,
-  licenseStatus: null as any,
-}
-
 vi.mock('../../../stores/appStore', () => ({
   useAppStore: (selector: any) => {
     if (typeof selector === 'function') {
       return selector(mockAppStore)
     }
     return mockAppStore
-  },
-}))
-
-vi.mock('../../../stores/authStore', () => ({
-  hasManagedCloudAccess: (state: typeof mockAuthStore) =>
-    state.licenseStatus !== 'refunded' &&
-    state.licenseStatus !== 'deactivated' &&
-    ((state.source === 'creem' && state.cloudWordsLimit > 0) ||
-      (state.source === 'appsumo' &&
-        state.cloudWordsLimit > 0 &&
-        state.licenseStatus === 'active') ||
-      state.plan === 'pro'),
-  useAuthStore: (selector: any) => {
-    if (typeof selector === 'function') {
-      return selector(mockAuthStore)
-    }
-    return mockAuthStore
   },
 }))
 
@@ -174,12 +144,6 @@ describe('LlmPane', () => {
     mockAppStore.llmLatencyMs = null
     mockAppStore.llmModels = []
     mockAppStore.lastContext = null
-    mockAuthStore.user = null
-    mockAuthStore.plan = null
-    mockAuthStore.source = 'free'
-    mockAuthStore.cloudWordsLimit = 0
-    mockAuthStore.licenseStatus = null
-
     vi.clearAllMocks()
     vi.mocked(tauri.readCredential).mockResolvedValue(null)
     vi.mocked(tauri.setCredential).mockResolvedValue(undefined)
@@ -229,51 +193,6 @@ describe('LlmPane', () => {
       expect(mockAppStore.setLlmTestStatus).toHaveBeenCalledWith('idle')
       expect(mockAppStore.setLlmLatencyMs).toHaveBeenCalledWith(null)
       expect(mockAppStore.setLlmModels).toHaveBeenCalledWith([])
-    })
-  })
-
-  describe('Cloud provider UI', () => {
-    it('keeps Ask Anything out of AI Polish settings', () => {
-      render(<LlmPane />)
-
-      expect(screen.queryByText('Ask Anything')).not.toBeInTheDocument()
-      expect(screen.queryByText('Voice question')).not.toBeInTheDocument()
-    })
-
-    it('shows cloud info when provider is cloud and user not signed in', () => {
-      mockAppStore.config.llm_provider = 'cloud'
-      render(<LlmPane />)
-      expect(screen.getByText('Cloud LLM (Pro)')).toBeInTheDocument()
-      expect(
-        screen.getByText('Sign in and subscribe to Pro to use cloud AI polish. No API key needed.'),
-      ).toBeInTheDocument()
-    })
-
-    it('shows upgrade hint when user is signed in but not pro', () => {
-      mockAppStore.config.llm_provider = 'cloud'
-      mockAuthStore.user = { id: '1', email: 'test@example.com' }
-      mockAuthStore.plan = 'free'
-
-      render(<LlmPane />)
-      expect(screen.getByText('Cloud LLM (Pro)')).toBeInTheDocument()
-      expect(
-        screen.getByText(
-          'Upgrade to Pro for cloud AI polish and monthly usage. No API key needed.',
-        ),
-      ).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: 'Upgrade' }))
-      expect(window.location.hash).toBe('#/upgrade')
-    })
-
-    it('shows active status when user is pro', () => {
-      mockAppStore.config.llm_provider = 'cloud'
-      mockAuthStore.user = { id: '1', email: 'test@example.com' }
-      mockAuthStore.plan = 'pro'
-
-      render(<LlmPane />)
-      expect(
-        screen.getByText('Pro active — cloud AI polish is ready. No API key needed.'),
-      ).toBeInTheDocument()
     })
   })
 
@@ -572,6 +491,86 @@ describe('LlmPane', () => {
 
       render(<LlmPane />)
       expect(screen.getByText('3 models available')).toBeInTheDocument()
+    })
+  })
+
+  describe('Custom OpenAI-compatible provider', () => {
+    beforeEach(() => {
+      mockAppStore.config.llm_provider = 'custom-openai-compatible'
+      mockAppStore.config.llm_api_key = ''
+      mockAppStore.config.llm_base_url = 'http://localhost:8000/v1'
+      mockAppStore.config.llm_model = 'my-local-model'
+    })
+
+    it('keeps the API key field visible but optional', () => {
+      render(<LlmPane />)
+      const input = screen.getByPlaceholderText('Enter API Key')
+      expect(input).toHaveValue('')
+      expect(input).not.toBeDisabled()
+      expect(screen.getByText('API Key (optional)')).toBeInTheDocument()
+    })
+
+    it('enables the connection test without an API key and uses the typed endpoint', async () => {
+      vi.mocked(tauri.benchLlmConnection).mockResolvedValue(37)
+      render(<LlmPane />)
+
+      const button = screen.getByRole('button', { name: /test/i })
+      expect(button).not.toBeDisabled()
+      fireEvent.click(button)
+
+      await waitFor(() =>
+        expect(tauri.benchLlmConnection).toHaveBeenCalledWith(
+          '',
+          'custom-openai-compatible',
+          'http://localhost:8000/v1',
+          'my-local-model',
+        ),
+      )
+    })
+
+    it('accepts plain http local endpoints in the base URL field', () => {
+      render(<LlmPane />)
+      const input = screen.getByPlaceholderText('http://localhost:8000/v1')
+
+      fireEvent.change(input, { target: { value: 'http://192.168.1.40:8080/v1' } })
+
+      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
+        llm_base_url: 'http://192.168.1.40:8080/v1',
+      })
+    })
+
+    it('does not keep a hosted provider base URL when switching to the custom provider', () => {
+      mockAppStore.config.llm_provider = 'openai'
+      mockAppStore.config.llm_base_url = 'https://api.openai.com/v1'
+      mockAppStore.config.llm_model = 'gpt-4o-mini'
+      render(<LlmPane />)
+
+      fireEvent.change(screen.getAllByRole('combobox')[0], {
+        target: { value: 'custom-openai-compatible' },
+      })
+
+      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
+        llm_provider: 'custom-openai-compatible',
+        llm_base_url: 'http://localhost:8000/v1',
+        llm_model: '',
+      })
+    })
+
+    it('preserves an already configured custom endpoint when switched away and back', () => {
+      mockAppStore.config.llm_provider = 'openai'
+      mockAppStore.config.llm_base_url = 'http://10.0.0.7:8000/v1'
+      mockAppStore.config.llm_model = 'internal-model'
+      render(<LlmPane />)
+
+      fireEvent.change(screen.getAllByRole('combobox')[0], {
+        target: { value: 'custom-openai-compatible' },
+      })
+
+      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
+        llm_provider: 'custom-openai-compatible',
+        llm_base_url: 'http://10.0.0.7:8000/v1',
+        llm_model: 'internal-model',
+      })
     })
   })
 

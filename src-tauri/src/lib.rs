@@ -1,6 +1,5 @@
 pub mod app_detector;
 pub mod audio;
-pub mod cloud_request;
 pub mod commands;
 pub mod credentials;
 pub mod dictionary_io;
@@ -32,9 +31,6 @@ use tracing_subscriber::EnvFilter;
 
 use std::sync::{Arc, Mutex};
 
-/// Default cloud API base URL. Override with the `API_BASE_URL` environment variable.
-pub const DEFAULT_API_BASE_URL: &str = "https://www.opentypeless.com";
-pub const CLIENT_VERSION_HEADER: &str = "X-OpenTypeless-Version";
 const HTTP_POOL_IDLE_TIMEOUT_SECS: u64 = 10 * 60;
 const HTTP_TCP_KEEPALIVE_SECS: u64 = 60;
 
@@ -46,19 +42,6 @@ fn build_shared_http_client() -> reqwest::Client {
         .timeout(std::time::Duration::from_secs(30))
         .build()
         .expect("Failed to create HTTP client")
-}
-
-/// Read the cloud API base URL from the environment, falling back to the compiled default.
-pub fn api_base_url() -> String {
-    std::env::var("API_BASE_URL").unwrap_or_else(|_| DEFAULT_API_BASE_URL.to_string())
-}
-
-pub fn desktop_client_version() -> &'static str {
-    env!("CARGO_PKG_VERSION")
-}
-
-pub fn with_desktop_client_version(request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
-    request.header(CLIENT_VERSION_HEADER, desktop_client_version())
 }
 
 /// Cached hotkey mode to avoid loading config from disk on every keypress.
@@ -76,25 +59,6 @@ pub struct CloseToTrayCache(pub Arc<Mutex<bool>>);
 
 /// Last global-hotkey registration error, if startup or settings registration failed.
 pub struct HotkeyRegistrationError(pub Arc<Mutex<Option<String>>>);
-
-/// In-memory copy of the system-vault-backed cloud session token.
-/// The main renderer may restore it for authenticated API calls; native STT/LLM reads it directly.
-pub struct SessionTokenStore(pub Arc<Mutex<String>>);
-
-fn with_restored_session_token<R, V>(builder: tauri::Builder<R>, vault: &V) -> tauri::Builder<R>
-where
-    R: tauri::Runtime,
-    V: credentials::CredentialSecretReader,
-{
-    let token = credentials::load_cloud_session_token(vault)
-        .unwrap_or_else(|error| {
-            tracing::warn!("Failed to restore cloud session from the system vault: {error}");
-            None
-        })
-        .unwrap_or_default();
-
-    builder.manage(SessionTokenStore(Arc::new(Mutex::new(token))))
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct AutoStartSyncOutcome {
@@ -219,7 +183,7 @@ fn build_ask_window(handle: &tauri::AppHandle) -> tauri::Result<tauri::WebviewWi
         "ask",
         tauri::WebviewUrl::App("index.html#ask".into()),
     )
-    .title("OpenTypeless Ask")
+    .title("TalkWithYourAI Ask")
     .inner_size(400.0, 220.0)
     .min_inner_size(360.0, 180.0)
     .resizable(false)
@@ -266,16 +230,14 @@ async fn show_ask_window(
     app: tauri::AppHandle,
     state: tauri::State<'_, commands::ask::AskDictationState>,
     config_state: tauri::State<'_, storage::ConfigManager>,
-    token_store: tauri::State<'_, SessionTokenStore>,
     client: tauri::State<'_, reqwest::Client>,
 ) -> Result<(), String> {
-    commands::ask::start_ask_flow(app, state, config_state, token_store, client).await
+    commands::ask::start_ask_flow(app, state, config_state, client).await
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::Result;
 
     fn text_mentions(text: &str, keywords: &[&str]) -> bool {
         let normalized = text.to_ascii_lowercase();
@@ -293,36 +255,6 @@ mod tests {
     }
 
     #[test]
-    fn desktop_client_version_header_matches_frontend_contract() {
-        assert_eq!(crate::CLIENT_VERSION_HEADER, "X-OpenTypeless-Version");
-        assert_eq!(crate::desktop_client_version(), env!("CARGO_PKG_VERSION"));
-    }
-
-    struct StaticSessionVault(&'static str);
-
-    impl credentials::CredentialSecretReader for StaticSessionVault {
-        fn get_secret(&self, _namespace: &str, _provider: &str) -> Result<Option<String>> {
-            Ok(Some(self.0.to_string()))
-        }
-    }
-
-    #[test]
-    fn cloud_session_state_is_managed_before_setup_and_window_scripts() {
-        let app = with_restored_session_token(
-            tauri::test::mock_builder(),
-            &StaticSessionVault("restored-token"),
-        )
-        .build(tauri::test::mock_context(tauri::test::noop_assets()))
-        .unwrap();
-
-        let state = app.state::<SessionTokenStore>();
-        assert_eq!(
-            state.0.lock().unwrap_or_else(|e| e.into_inner()).as_str(),
-            "restored-token"
-        );
-    }
-
-    #[test]
     fn shared_http_pool_survives_normal_gaps_between_dictations() {
         const {
             assert!(HTTP_POOL_IDLE_TIMEOUT_SECS >= 10 * 60);
@@ -333,8 +265,8 @@ mod tests {
 
     #[test]
     fn cli_action_parser_supports_first_and_later_instance_arguments() {
-        let toggle = vec!["/usr/bin/opentypeless".to_string(), "toggle".to_string()];
-        let ask = vec!["OpenTypeless.exe".to_string(), "ask".to_string()];
+        let toggle = vec!["/usr/bin/talkwithyourai".to_string(), "toggle".to_string()];
+        let ask = vec!["TalkWithYourAI.exe".to_string(), "ask".to_string()];
 
         assert_eq!(parse_cli_action(&toggle), Some(CliAction::Toggle));
         assert_eq!(parse_cli_action(&ask), Some(CliAction::Ask));
@@ -343,11 +275,11 @@ mod tests {
     #[test]
     fn cli_action_parser_does_not_hijack_deep_links_or_ambiguous_commands() {
         let deep_link = vec![
-            "opentypeless".to_string(),
-            "opentypeless://auth/callback?mode=toggle".to_string(),
+            "talkwithyourai".to_string(),
+            "talkwithyourai://auth/callback?mode=toggle".to_string(),
         ];
         let ambiguous = vec![
-            "opentypeless".to_string(),
+            "talkwithyourai".to_string(),
             "toggle".to_string(),
             "ask".to_string(),
         ];
@@ -634,17 +566,35 @@ fn env_flag_enabled(name: &str) -> bool {
     std::env::var(name).is_ok_and(|value| matches!(value.as_str(), "1" | "true" | "TRUE" | "yes"))
 }
 
+/// Read a boolean env flag, preferring the new name but still honoring the
+/// upstream compatibility alias so existing launch scripts keep working.
+#[cfg(target_os = "linux")]
+fn env_flag_enabled_compat(new: &str, old: &str) -> bool {
+    env_flag_enabled(new) || env_flag_enabled(old)
+}
+
 /// Apply Linux WebKit/GTK environment workarounds before any WebView is created.
 fn apply_linux_workarounds() {
     #[cfg(target_os = "linux")]
     {
         let env = LinuxLaunchEnv::current();
+        // The OPENTYPELESS_* names are upstream compatibility aliases for the
+        // TALKWITHYOURAI_* flags; both are accepted during the rename window.
         let plan = linux_workaround_plan(
             &env,
-            env_flag_enabled("OPENTYPELESS_DISABLE_WEBKIT_DMABUF"),
-            env_flag_enabled("OPENTYPELESS_DISABLE_WEBKIT_COMPOSITING"),
-            env_flag_enabled("OPENTYPELESS_FORCE_GDK_X11"),
-            env_flag_enabled("OPENTYPELESS_FORCE_SOFTWARE_GL"),
+            env_flag_enabled_compat(
+                "TALKWITHYOURAI_DISABLE_WEBKIT_DMABUF",
+                "OPENTYPELESS_DISABLE_WEBKIT_DMABUF",
+            ),
+            env_flag_enabled_compat(
+                "TALKWITHYOURAI_DISABLE_WEBKIT_COMPOSITING",
+                "OPENTYPELESS_DISABLE_WEBKIT_COMPOSITING",
+            ),
+            env_flag_enabled_compat("TALKWITHYOURAI_FORCE_GDK_X11", "OPENTYPELESS_FORCE_GDK_X11"),
+            env_flag_enabled_compat(
+                "TALKWITHYOURAI_FORCE_SOFTWARE_GL",
+                "OPENTYPELESS_FORCE_SOFTWARE_GL",
+            ),
         );
 
         if plan.disable_dmabuf {
@@ -816,13 +766,11 @@ fn dispatch_cli_action(app: &tauri::AppHandle, action: CliAction) {
                 }
                 let ask_state = app_handle.state::<commands::ask::AskDictationState>();
                 let config_state = app_handle.state::<storage::ConfigManager>();
-                let token_store = app_handle.state::<SessionTokenStore>();
                 let client = app_handle.state::<reqwest::Client>();
                 if let Err(error) = commands::ask::start_ask_flow(
                     app_handle.clone(),
                     ask_state,
                     config_state,
-                    token_store,
                     client,
                 )
                 .await
@@ -843,7 +791,7 @@ pub fn run() {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::from_default_env().add_directive(
-                "opentypeless=debug"
+                "talkwithyourai=debug"
                     .parse()
                     .expect("static directive is valid"),
             ),
@@ -866,14 +814,7 @@ pub fn run() {
         }
     }
 
-    // Builder-managed state exists before Tauri creates configured webviews.
-    // Registering this in `.setup(...)` races the main renderer's first invoke on WebView2.
-    let builder = with_restored_session_token(
-        tauri::Builder::default(),
-        &credentials::SystemCredentialVault,
-    );
-
-    builder
+    tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::init(
@@ -888,12 +829,9 @@ pub fn run() {
                 dispatch_cli_action(app, action);
                 return;
             }
-            // Deep-link URL forwarding is handled automatically by the
-            // "deep-link" feature of single-instance plugin.
-            // Just focus the main window so the user sees the result.
+            // Focus the main window so a second launch surfaces the running app.
             restore_main_window(app);
         }))
-        .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             // Open devtools only when the "devtools" feature is explicitly enabled
             #[cfg(feature = "devtools")]
@@ -914,7 +852,7 @@ pub fn run() {
             // Initialize data directory and database
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
-            let db_path = data_dir.join("opentypeless.db");
+            let db_path = data_dir.join("talkwithyourai.db");
 
             // Initialize stores
             let config_manager = storage::ConfigManager::new(app_handle.clone());
@@ -999,7 +937,7 @@ pub fn run() {
                         .clone(),
                 )
                 .menu(&tray_menu)
-                .tooltip("OpenTypeless")
+                .tooltip("TalkWithYourAI")
                 .on_menu_event(move |app, event| match event.id.as_ref() {
                     "quit" => {
                         app.exit(0);
@@ -1063,14 +1001,6 @@ pub fn run() {
                     "history" => {
                         if let Some(window) = app.get_webview_window("main") {
                             let _ = window.emit("tray:history", ());
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                            refresh_tray(app);
-                        }
-                    }
-                    "account" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.emit("navigate", "#/account");
                             let _ = window.show();
                             let _ = window.set_focus();
                             refresh_tray(app);
@@ -1148,7 +1078,7 @@ pub fn run() {
                 }
             }
 
-            tracing::info!("OpenTypeless started");
+            tracing::info!("TalkWithYourAI started");
 
             // P1-2: Pre-warm HTTP connection pool in background
             let warm_handle = app_handle.clone();
@@ -1197,8 +1127,6 @@ pub fn run() {
             commands::credentials::migrate_legacy_credentials,
             commands::stt::get_stt_provider_diagnostics,
             commands::stt::get_stt_recording_capability,
-            commands::stt::cache_managed_stt_capability,
-            commands::stt::clear_managed_stt_capability,
             commands::stt::test_stt_connection,
             commands::llm::test_llm_connection,
             commands::llm::bench_llm_connection,
@@ -1207,7 +1135,6 @@ pub fn run() {
             commands::llm::fetch_llm_models,
             commands::history::get_history,
             commands::history::clear_history,
-            commands::backup::restore_backup_data,
             commands::dictionary::get_dictionary,
             commands::dictionary::add_dictionary_entry,
             commands::dictionary::update_dictionary_entry,
@@ -1232,8 +1159,6 @@ pub fn run() {
             commands::misc::get_system_diagnostics,
             commands::config::set_auto_start,
             commands::config::set_capsule_auto_hide,
-            commands::config::get_session_token,
-            commands::config::set_session_token,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

@@ -1,15 +1,11 @@
-use crate::credentials::{
-    self, CredentialSecretReader, CredentialSecretRemover, CredentialVault, SystemCredentialVault,
-};
 use crate::storage;
 use crate::AskHotkeyCache;
 use crate::CloseToTrayCache;
 use crate::HotkeyModeCache;
 use crate::HotkeyRegistrationError;
 use crate::HotkeyRoleCache;
-use crate::SessionTokenStore;
 use serde_json::{json, Map, Value};
-use tauri::{Emitter, Manager, Window};
+use tauri::{Emitter, Manager};
 
 fn config_patch_between(previous: &storage::AppConfig, next: &storage::AppConfig) -> Value {
     let mut patch = Map::new();
@@ -251,10 +247,7 @@ pub async fn update_config(
 ) -> Result<(), String> {
     let previous = state.load().await.map_err(|e| e.to_string())?;
     let incoming = config;
-    let config = prepare_config_for_save(storage::config_with_native_managed_state(
-        incoming.clone(),
-        Some(&previous),
-    ))?;
+    let config = prepare_config_for_save(incoming.clone())?;
     let refresh_hotkeys = hotkey_runtime_config_changed(&previous, &config);
     let refresh_provider_connections = provider_connection_config_changed(&previous, &config);
 
@@ -348,169 +341,9 @@ pub async fn set_capsule_auto_hide(
     save_capsule_auto_hide(&app, &state, enabled).await
 }
 
-#[tauri::command]
-pub fn get_session_token(
-    window: Window,
-    state: tauri::State<'_, SessionTokenStore>,
-) -> Result<Option<String>, String> {
-    ensure_main_session_window(&window)?;
-    get_session_token_from_vault(state.inner(), &SystemCredentialVault)
-}
-
-#[tauri::command]
-pub async fn set_session_token(
-    window: Window,
-    state: tauri::State<'_, SessionTokenStore>,
-    token: String,
-) -> Result<(), String> {
-    ensure_main_session_window(&window)?;
-    set_session_token_with_vault(state.inner(), token, &SystemCredentialVault)
-}
-
-fn ensure_main_session_window(window: &Window) -> Result<(), String> {
-    if window.label() == "main" {
-        Ok(())
-    } else {
-        Err("cloud session access is only allowed from the main window".to_string())
-    }
-}
-
-fn get_session_token_from_vault<V: CredentialSecretReader>(
-    state: &SessionTokenStore,
-    vault: &V,
-) -> Result<Option<String>, String> {
-    let cached = state.0.lock().unwrap_or_else(|e| e.into_inner()).clone();
-    if !cached.trim().is_empty() {
-        return Ok(Some(cached));
-    }
-
-    let restored = credentials::load_cloud_session_token(vault).map_err(|e| e.to_string())?;
-    if let Some(token) = restored.as_ref() {
-        *state.0.lock().unwrap_or_else(|e| e.into_inner()) = token.clone();
-    }
-    Ok(restored)
-}
-
-fn set_session_token_with_vault<
-    V: CredentialVault + CredentialSecretReader + CredentialSecretRemover,
->(
-    state: &SessionTokenStore,
-    token: String,
-    vault: &V,
-) -> Result<(), String> {
-    if token.trim().is_empty() {
-        credentials::remove_cloud_session_token(vault).map_err(|e| e.to_string())?;
-        state.0.lock().unwrap_or_else(|e| e.into_inner()).clear();
-    } else {
-        credentials::store_cloud_session_token(vault, &token).map_err(|e| e.to_string())?;
-        *state.0.lock().unwrap_or_else(|e| e.into_inner()) = token;
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::{anyhow, Result};
-    use std::sync::{Arc, Mutex};
-
-    #[derive(Default)]
-    struct MemorySessionVault {
-        token: Mutex<Option<String>>,
-        fail_write: bool,
-    }
-
-    impl CredentialVault for MemorySessionVault {
-        fn set_secret(&self, _namespace: &str, _provider: &str, secret: &str) -> Result<()> {
-            if self.fail_write {
-                return Err(anyhow!("vault write failed"));
-            }
-            *self.token.lock().unwrap() = Some(secret.to_string());
-            Ok(())
-        }
-    }
-
-    impl CredentialSecretReader for MemorySessionVault {
-        fn get_secret(&self, _namespace: &str, _provider: &str) -> Result<Option<String>> {
-            Ok(self.token.lock().unwrap().clone())
-        }
-    }
-
-    impl CredentialSecretRemover for MemorySessionVault {
-        fn remove_secret(&self, _namespace: &str, _provider: &str) -> Result<()> {
-            *self.token.lock().unwrap() = None;
-            Ok(())
-        }
-    }
-
-    fn session_store(token: &str) -> SessionTokenStore {
-        SessionTokenStore(Arc::new(Mutex::new(token.to_string())))
-    }
-
-    #[test]
-    fn session_token_round_trips_through_vault_and_runtime_cache() {
-        let state = session_store("");
-        let vault = MemorySessionVault::default();
-
-        set_session_token_with_vault(&state, "vault-token".to_string(), &vault).unwrap();
-
-        assert_eq!(vault.token.lock().unwrap().as_deref(), Some("vault-token"));
-        assert_eq!(
-            get_session_token_from_vault(&state, &vault)
-                .unwrap()
-                .as_deref(),
-            Some("vault-token")
-        );
-    }
-
-    #[test]
-    fn session_token_restores_runtime_cache_after_restart() {
-        let state = session_store("");
-        let vault = MemorySessionVault {
-            token: Mutex::new(Some("restored-token".to_string())),
-            fail_write: false,
-        };
-
-        let restored = get_session_token_from_vault(&state, &vault).unwrap();
-
-        assert_eq!(restored.as_deref(), Some("restored-token"));
-        assert_eq!(
-            state.0.lock().unwrap_or_else(|e| e.into_inner()).as_str(),
-            "restored-token"
-        );
-    }
-
-    #[test]
-    fn failed_session_vault_write_keeps_previous_runtime_token() {
-        let state = session_store("previous-token");
-        let vault = MemorySessionVault {
-            token: Mutex::new(None),
-            fail_write: true,
-        };
-
-        let error =
-            set_session_token_with_vault(&state, "new-token".to_string(), &vault).unwrap_err();
-
-        assert!(error.contains("vault write failed"));
-        assert_eq!(
-            state.0.lock().unwrap_or_else(|e| e.into_inner()).as_str(),
-            "previous-token"
-        );
-    }
-
-    #[test]
-    fn clearing_session_removes_vault_and_runtime_token() {
-        let state = session_store("session-token");
-        let vault = MemorySessionVault {
-            token: Mutex::new(Some("session-token".to_string())),
-            fail_write: false,
-        };
-
-        set_session_token_with_vault(&state, String::new(), &vault).unwrap();
-
-        assert_eq!(*vault.token.lock().unwrap(), None);
-        assert!(state.0.lock().unwrap_or_else(|e| e.into_inner()).is_empty());
-    }
 
     #[test]
     fn config_patch_includes_capsule_auto_hide_change() {
@@ -633,94 +466,6 @@ mod tests {
         assert!(prepared.stt_api_key.is_empty());
         assert!(prepared.stt_custom_api_key.is_empty());
         assert!(prepared.llm_api_key.is_empty());
-    }
-
-    fn native_cloud_config(user_id: &str, age_hours: i64) -> storage::AppConfig {
-        use crate::stt::capabilities::{
-            ManagedSttCapability, ManagedSttCapabilityState, ManagedSttFormat,
-        };
-        let received = chrono::Utc::now() - chrono::Duration::hours(age_hours);
-        storage::AppConfig {
-            stt_provider: "cloud".to_string(),
-            managed_stt_capability_state: Some(ManagedSttCapabilityState {
-                user_id: user_id.to_string(),
-                server_generated_at: received.to_rfc3339(),
-                received_at_unix_seconds: received.timestamp(),
-                capability: ManagedSttCapability {
-                    version: 2,
-                    max_recording_seconds: 600,
-                    max_multipart_bytes: 4_200_000,
-                    formats: vec![
-                        ManagedSttFormat {
-                            mime_type: "audio/wav".to_string(),
-                            max_audio_bytes: 4_000_000,
-                            preferred_client_switch_bytes: Some(700_000),
-                            bitrate_bits_per_second: None,
-                        },
-                        ManagedSttFormat {
-                            mime_type: "audio/ogg; codecs=opus".to_string(),
-                            max_audio_bytes: 4_000_000,
-                            preferred_client_switch_bytes: None,
-                            bitrate_bits_per_second: Some(48_000),
-                        },
-                    ],
-                },
-            }),
-            ..storage::AppConfig::default()
-        }
-    }
-
-    #[test]
-    fn onboarding_draft_cannot_clear_a_fresh_native_cloud_limit() {
-        let current = native_cloud_config("current-user", 0);
-        let draft = storage::AppConfig {
-            stt_provider: "cloud".to_string(),
-            theme: "dark".to_string(),
-            ..storage::AppConfig::default()
-        };
-        let saved = prepare_config_for_save(storage::config_with_native_managed_state(
-            draft,
-            Some(&current),
-        ))
-        .unwrap();
-        assert_eq!(saved.max_recording_seconds, 600);
-        assert_eq!(saved.theme, "dark");
-        assert_eq!(
-            saved.managed_stt_capability_state,
-            current.managed_stt_capability_state
-        );
-    }
-
-    #[test]
-    fn settings_snapshot_cannot_replace_a_newer_native_capability() {
-        let current = native_cloud_config("current-user", 0);
-        let stale_draft = native_cloud_config("old-user", 25);
-        let saved = prepare_config_for_save(storage::config_with_native_managed_state(
-            stale_draft,
-            Some(&current),
-        ))
-        .unwrap();
-        assert_eq!(saved.max_recording_seconds, 600);
-        assert_eq!(
-            saved.managed_stt_capability_state.unwrap().user_id,
-            "current-user"
-        );
-    }
-
-    #[test]
-    fn settings_save_cannot_resurrect_a_capability_cleared_on_logout() {
-        let cleared = storage::AppConfig {
-            stt_provider: "cloud".to_string(),
-            ..storage::AppConfig::default()
-        };
-        let draft = native_cloud_config("logged-out-user", 0);
-        let saved = prepare_config_for_save(storage::config_with_native_managed_state(
-            draft,
-            Some(&cleared),
-        ))
-        .unwrap();
-        assert!(saved.managed_stt_capability_state.is_none());
-        assert_eq!(saved.max_recording_seconds, 30);
     }
 
     #[test]

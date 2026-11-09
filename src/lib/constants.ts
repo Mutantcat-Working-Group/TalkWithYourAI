@@ -12,81 +12,15 @@ export const UI_LANGUAGES = [
   { value: 'it', label: 'Italiano' },
 ] as const
 
-export const APP_NAME = 'OpenTypeless'
-export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.1.61'
-export const CLIENT_VERSION_HEADER = 'X-OpenTypeless-Version'
-export const APP_VERSION_HEADER_VALUE = APP_VERSION.replace(/^v/i, '')
-export const APP_REPO_URL = 'https://github.com/tover0314-w/opentypeless'
-export const APP_LICENSE_URL = 'https://github.com/tover0314-w/opentypeless/blob/main/LICENSE'
-// Cloud API base URL — defaults to www.opentypeless.com but can be overridden via VITE_API_BASE_URL env var.
-// All core features (BYOK mode) work without any cloud connection.
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://www.opentypeless.com'
-
-export const FREE_PLAN = {
-  sttMinutes: 15,
-  llmTokens: 100_000,
-} as const
-
-export type CheckoutProduct = 'pro_monthly' | 'lifetime_starter'
-
-const CLOUD_PLAN_BENEFITS = [
-  { labelKey: 'upgrade.benefits.cloudWords' },
-  { labelKey: 'upgrade.benefits.noApiKey' },
-  { labelKey: 'upgrade.benefits.backupScenes' },
-] as const
-
-type CloudPlanBenefit = (typeof CLOUD_PLAN_BENEFITS)[number]
-
-export type CheckoutPlan = {
-  product: CheckoutProduct
-  nameKey: string
-  descriptionKey: string
-  badgeKey?: string
-  sublineKey?: string
-  price: string
-  upgradePrice?: string
-  upgradeSublineKey?: string
-  periodKey: string
-  ctaKey: string
-  benefits: readonly CloudPlanBenefit[]
-}
-
-export const PRO_PLAN = {
-  product: 'pro_monthly',
-  nameKey: 'upgrade.pro',
-  descriptionKey: 'upgrade.planDescriptions.pro',
-  price: '$4.99',
-  periodKey: 'upgrade.month',
-  ctaKey: 'upgrade.subscribeToPro',
-  benefits: CLOUD_PLAN_BENEFITS,
-} satisfies CheckoutPlan
-
-export const LIFETIME_PLAN = {
-  product: 'lifetime_starter',
-  nameKey: 'upgrade.lifetime',
-  descriptionKey: 'upgrade.planDescriptions.lifetime',
-  badgeKey: 'upgrade.lifetimeBadge',
-  sublineKey: 'upgrade.lifetimeSave',
-  price: '$89.99',
-  upgradePrice: '$84.99',
-  upgradeSublineKey: 'upgrade.lifetimeUpgradeSave',
-  periodKey: 'upgrade.oneTime',
-  ctaKey: 'upgrade.buyLifetime',
-  benefits: CLOUD_PLAN_BENEFITS,
-} satisfies CheckoutPlan
-
-export const CHECKOUT_PLANS: CheckoutPlan[] = [PRO_PLAN, LIFETIME_PLAN]
-
-export const DEFAULT_CHECKOUT_PRODUCT: CheckoutProduct = 'pro_monthly'
-
-export const ACTIVE_CLOUD_PLANS = ['pro', 'lifetime_starter'] as const
-
-export function isActiveCloudPlan(plan: string): plan is (typeof ACTIVE_CLOUD_PLANS)[number] {
-  return ACTIVE_CLOUD_PLANS.includes(plan as (typeof ACTIVE_CLOUD_PLANS)[number])
-}
+export const APP_NAME = 'TalkWithYourAI'
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.0.20261110'
+export const APP_REPO_URL = 'https://github.com/Mutantcat-Working-Group/TalkWithYourAI'
+export const APP_LICENSE_URL =
+  'https://github.com/Mutantcat-Working-Group/TalkWithYourAI/blob/main/LICENSE'
 
 export const CUSTOM_WHISPER_PROVIDER = 'custom-whisper' as const
 export const APPLE_SPEECH_PROVIDER = 'apple-speech' as const
+export const CUSTOM_LLM_PROVIDER = 'custom-openai-compatible' as const
 
 export const CUSTOM_STT_DEFAULTS = {
   preset: 'speaches',
@@ -117,8 +51,9 @@ export const STT_PROVIDERS: { value: string; labelKey: string }[] = [
   { value: 'groq-whisper', labelKey: 'providers.stt.groqWhisper' },
   { value: 'siliconflow', labelKey: 'providers.stt.siliconflow' },
   { value: APPLE_SPEECH_PROVIDER, labelKey: 'providers.stt.appleSpeech' },
-  { value: CUSTOM_WHISPER_PROVIDER, labelKey: 'providers.stt.customWhisper' },
-  { value: 'cloud', labelKey: 'providers.stt.cloud' },
+  // Reuse the existing localizable string so the entry is explicit about
+  // accepting any OpenAI-compatible transcription endpoint.
+  { value: CUSTOM_WHISPER_PROVIDER, labelKey: 'settings.customSttPresetCustom' },
 ] as const
 
 export const VOLCENGINE_STT_RESOURCES = [
@@ -132,11 +67,10 @@ export const VOLCENGINE_STT_RESOURCES = [
   },
 ] as const
 
+// Apple Speech is platform-gated and hidden here, but the custom endpoint is
+// offered so first-run setup can point at any OpenAI-compatible server.
 export const ONBOARDING_STT_PROVIDERS = STT_PROVIDERS.filter(
-  (provider) =>
-    provider.value !== CUSTOM_WHISPER_PROVIDER &&
-    provider.value !== APPLE_SPEECH_PROVIDER &&
-    provider.value !== 'cloud',
+  (provider) => provider.value !== APPLE_SPEECH_PROVIDER,
 )
 
 export const LLM_PROVIDERS: { value: string; labelKey: string }[] = [
@@ -152,12 +86,16 @@ export const LLM_PROVIDERS: { value: string; labelKey: string }[] = [
   { value: 'claude', labelKey: 'providers.llm.claude' },
   { value: 'ollama', labelKey: 'providers.llm.ollama' },
   { value: 'openrouter', labelKey: 'providers.llm.openrouter' },
-  { value: 'cloud', labelKey: 'providers.llm.cloud' },
+  // Reuse the existing localizable string; the i18n bundle is owned separately.
+  { value: CUSTOM_LLM_PROVIDER, labelKey: 'settings.customSttPresetCustom' },
 ] as const
 
-export const ONBOARDING_LLM_PROVIDERS = LLM_PROVIDERS.filter(
-  (provider) => provider.value !== 'cloud',
-)
+export const ONBOARDING_LLM_PROVIDERS = LLM_PROVIDERS
+
+export const CUSTOM_LLM_DEFAULTS = {
+  baseUrl: 'http://localhost:8000/v1',
+  model: '',
+} as const
 
 export const LLM_DEFAULT_CONFIG: Record<string, { baseUrl: string; model: string }> = {
   zhipu: { baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4-flash' },
@@ -178,11 +116,49 @@ export const LLM_DEFAULT_CONFIG: Record<string, { baseUrl: string; model: string
   claude: { baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-0' },
   ollama: { baseUrl: 'http://localhost:11434/v1', model: 'llama3.2' },
   openrouter: { baseUrl: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4o-mini' },
-  cloud: { baseUrl: `${API_BASE_URL}/api/proxy`, model: 'default' },
+  [CUSTOM_LLM_PROVIDER]: CUSTOM_LLM_DEFAULTS,
+}
+
+/**
+ * Picks the provider/model values to apply when the user switches LLM provider.
+ * Switching to the custom endpoint must not inherit a hosted provider's URL or
+ * model, while a previously configured custom endpoint must be preserved.
+ */
+export function llmDefaultsForProvider(
+  provider: string,
+  currentBaseUrl: string,
+  currentModel: string,
+  previousProvider?: string,
+): { baseUrl: string; model: string } {
+  if (provider === CUSTOM_LLM_PROVIDER) {
+    const previousDefault = previousProvider
+      ? LLM_DEFAULT_CONFIG[previousProvider]?.baseUrl
+      : undefined
+    const inheritsHostedDefault =
+      previousDefault !== undefined && previousDefault === currentBaseUrl.trim()
+    if (inheritsHostedDefault || !currentBaseUrl.trim()) {
+      return { baseUrl: CUSTOM_LLM_DEFAULTS.baseUrl, model: CUSTOM_LLM_DEFAULTS.model }
+    }
+    return {
+      baseUrl: currentBaseUrl,
+      model: currentModel.trim() ? currentModel : CUSTOM_LLM_DEFAULTS.model,
+    }
+  }
+
+  const defaults = LLM_DEFAULT_CONFIG[provider]
+  return {
+    baseUrl: defaults?.baseUrl ?? currentBaseUrl,
+    model: defaults?.model ?? currentModel,
+  }
 }
 
 export function llmProviderRequiresApiKey(provider: string): boolean {
-  return provider.trim().toLowerCase() !== 'ollama'
+  const normalized = provider.trim().toLowerCase()
+  return normalized !== 'ollama' && normalized !== CUSTOM_LLM_PROVIDER
+}
+
+export function isCustomLlmProvider(provider: string): boolean {
+  return provider.trim().toLowerCase() === CUSTOM_LLM_PROVIDER
 }
 
 export const LANGUAGES: { value: string; label?: string; labelKey?: string }[] = [

@@ -200,17 +200,17 @@ mod tests {
     #[test]
     fn validate_dictionary_inputs_counts_unicode_scalars_and_normalizes_optional_value() {
         let (word, pronunciation) = validate_dictionary_inputs(
-            "  OpenTypeless  ".to_string(),
+            "  TalkWithYourAI  ".to_string(),
             Some("  open typeless  ".to_string()),
         )
         .unwrap();
-        assert_eq!(word, "OpenTypeless");
+        assert_eq!(word, "TalkWithYourAI");
         assert_eq!(pronunciation.as_deref(), Some("open typeless"));
 
         assert!(validate_dictionary_inputs("你".repeat(100), None).is_ok());
         assert!(validate_dictionary_inputs("你".repeat(101), None).is_err());
         assert!(
-            validate_dictionary_inputs("OpenTypeless".to_string(), Some(" ".to_string())).is_ok()
+            validate_dictionary_inputs("TalkWithYourAI".to_string(), Some(" ".to_string())).is_ok()
         );
     }
 

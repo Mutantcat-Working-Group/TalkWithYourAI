@@ -24,7 +24,6 @@ export type SttProvider =
   | 'siliconflow'
   | 'apple-speech'
   | 'custom-whisper'
-  | 'cloud'
 
 export type AliyunQwenRegion = 'china-mainland' | 'international'
 export type LlmProvider =
@@ -40,7 +39,7 @@ export type LlmProvider =
   | 'claude'
   | 'ollama'
   | 'openrouter'
-  | 'cloud'
+  | 'custom-openai-compatible'
 export type OutputMode = 'keyboard' | 'clipboard'
 export type PasteShortcut = 'ctrlV' | 'ctrlShiftV' | 'shiftInsert'
 export type WindowsSendInputNewlineMode = 'enter' | 'shiftEnter' | 'crlf'
@@ -55,7 +54,7 @@ export type HotkeyMode = 'hold' | 'toggle'
 export type Theme = 'light' | 'dark' | 'system'
 export type PolishChineseScript = 'preserve' | 'simplified' | 'traditional'
 export type PolishStyle = 'minimal' | 'clean' | 'structured' | 'professional'
-export type SceneSource = 'custom' | 'builtin' | 'cloud'
+export type SceneSource = 'custom' | 'builtin'
 export type ContextFamily =
   | 'email'
   | 'work_chat'
@@ -233,7 +232,6 @@ export interface AppConfig {
   recording_limit_mode: 'auto' | 'custom'
   custom_recording_limit_seconds: number
   max_recording_seconds: number
-  managed_stt_capability_state?: unknown
   history_enabled: boolean
   history_retention_days: number
   history_max_entries: number
@@ -300,8 +298,6 @@ interface AppState {
   setOnboardingCompleted: (done: boolean) => void
   onboardingStep: number
   setOnboardingStep: (step: number) => void
-  onboardingMode: 'cloud' | 'byok' | null
-  setOnboardingMode: (mode: 'cloud' | 'byok' | null) => void
 
   // Capsule
   capsuleExpanded: boolean
@@ -684,8 +680,21 @@ function syncTranslationConfig(previous: AppConfig, partial: Partial<AppConfig>)
   return merged
 }
 
+const LEGACY_STT_PROVIDER_MAP: Record<string, SttProvider> = { cloud: 'glm-asr' }
+const LEGACY_LLM_PROVIDER_MAP: Record<string, LlmProvider> = { cloud: 'openrouter' }
+
+/**
+ * Maps retired cloud provider ids persisted by older builds onto local BYOK providers.
+ */
+function normalizeProviderIds(config: AppConfig): AppConfig {
+  const sttProvider = LEGACY_STT_PROVIDER_MAP[config.stt_provider as string] ?? config.stt_provider
+  const llmProvider = LEGACY_LLM_PROVIDER_MAP[config.llm_provider as string] ?? config.llm_provider
+  if (sttProvider === config.stt_provider && llmProvider === config.llm_provider) return config
+  return { ...config, stt_provider: sttProvider, llm_provider: llmProvider }
+}
+
 function syncHotkeyConfig(previous: AppConfig, partial: Partial<AppConfig>): AppConfig {
-  const merged = syncTranslationConfig(previous, partial)
+  const merged = normalizeProviderIds(syncTranslationConfig(previous, partial))
   if (partial.hotkeys) {
     const hotkeys = { ...partial.hotkeys }
     const listsChanged =
@@ -837,8 +846,6 @@ export const useAppStore = create<AppState>((set) => ({
   setOnboardingCompleted: (onboardingCompleted) => set({ onboardingCompleted }),
   onboardingStep: 0,
   setOnboardingStep: (onboardingStep) => set({ onboardingStep }),
-  onboardingMode: null,
-  setOnboardingMode: (onboardingMode) => set({ onboardingMode }),
 
   capsuleExpanded: false,
   setCapsuleExpanded: (capsuleExpanded) => set({ capsuleExpanded }),

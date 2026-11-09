@@ -1,16 +1,19 @@
 # Release Signing Setup
 
-OpenTypeless releases are built in `toverwu-qaq/opentypeless` and published to
-`tover0314-w/opentypeless`.
+TalkWithYourAI releases are built and published from this repository
+(`Mutantcat-Working-Group/TalkWithYourAI`).
 
-The legacy Release Drafter workflow is disabled in both repositories. If a
-same-tag draft was created before this change landed, release preflight refuses
-to mutate it automatically; inspect and remove the stale draft before retrying.
+## Current state
+
+This repository has no release workflow yet. Only check-style CI (`ci.yml`)
+plus the issue/PR hygiene workflows run here today, so the signing
+configuration below is the prerequisite checklist for the release pipeline
+that will be added as a follow-up task.
 
 ## Required GitHub Secrets
 
-Set these secrets on `toverwu-qaq/opentypeless`, because that repository runs
-the GitHub Actions workflow.
+Set these secrets on `Mutantcat-Working-Group/TalkWithYourAI`, because that
+repository runs the GitHub Actions workflow.
 
 macOS:
 
@@ -27,10 +30,6 @@ Tauri updater:
 - `TAURI_SIGNING_PRIVATE_KEY`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 
-Cross-repository publishing:
-
-- `RELEASE_TOKEN`
-
 Linux:
 
 - `LINUX_GPG_PRIVATE_KEY`: base64-encoded ASCII-armored private GPG key
@@ -44,19 +43,6 @@ Windows PFX fallback:
 - `WINDOWS_CERTIFICATE_PASSWORD`: required when `WINDOWS_CERTIFICATE` is set
 - `WINDOWS_TIMESTAMP_URL`: optional timestamp server URL; defaults to DigiCert
 
-These PFX secrets are retained only for historical reference. The current
-production release workflow has no PFX path.
-
-Windows installers are published only through the dedicated `Release Windows`
-workflow. The general `Release macOS and Linux` workflow has no Windows path.
-`signing_mode: signpath` requires the production signer and remains the
-recommended default. `signing_mode: unsigned` is an explicit release-operator
-exception: the workflow requires both installers to be completely unsigned and
-still enforces Tauri updater signatures, checksums, pinned source provenance,
-and the final asset gate. Test-signed or invalidly signed installers are never
-accepted as unsigned. Unsigned installers may show Windows SmartScreen or
-Unknown Publisher warnings.
-
 Windows SignPath:
 
 - `SIGNPATH_API_TOKEN`: token for a SignPath user that is a submitter for the
@@ -66,10 +52,10 @@ Windows SignPath:
 - `SIGNPATH_SIGNING_POLICY_SLUG`: SignPath signing policy slug
 - `WINDOWS_EXPECTED_SIGNER_THUMBPRINT`: thumbprint of the trusted production Authenticode leaf certificate
 
-The SignPath project and GitHub trusted build system must point to
-`toverwu-qaq/opentypeless`, because that repository runs the GitHub Actions
-workflow and owns the GitHub artifact submitted to SignPath. Signed Windows
-artifacts are still published to `tover0314-w/opentypeless`.
+The SignPath project and GitHub trusted build system must point at this
+repository, because this repository runs the GitHub Actions workflow and owns
+the GitHub artifact submitted to SignPath. Signed Windows artifacts are
+published to this repository's GitHub Release.
 
 The Windows SignPath workflow uses the project's default artifact
 configuration. This default artifact configuration must have a `<zip-file>`
@@ -82,26 +68,49 @@ publish those installers to a production GitHub Release. Publishing requires a
 production SignPath policy, an Authenticode result of `Valid`, and an exact
 match with `WINDOWS_EXPECTED_SIGNER_THUMBPRINT`.
 
-For a complete release, dispatch `Release macOS and Linux` separately for
-`macos` and `linux`, then dispatch `Release Windows` with the approved
-`signing_mode` and `publish_release` set to `true`. Run `Staple macOS Release Assets` if Apple
-notarization completes asynchronously. Finally, run `Finalize Release`; it
-promotes the prerelease only after all platform signatures, the exact asset
-inventory, signed build-provenance manifests, and the immutable asset digest
-snapshot pass. Each provenance manifest binds its platform assets to the exact
-official Tag SHA and CI/CD SHA used for the build.
-`Finalize Release.windows_signing_mode` must match the mode used by the Windows
-build. The Windows job verifies the installer signatures and checksums on a
-native runner; the complete immutable asset snapshot is checked by the other
-platform jobs and once more immediately before promotion.
+Windows installers are published only through the dedicated `Release Windows`
+workflow. The general `Release macOS and Linux` workflow has no Windows path.
+`signing_mode: signpath` requires the production signer and remains the
+recommended default. `signing_mode: unsigned` is an explicit release-operator
+exception: the workflow requires both installers to be completely unsigned and
+still enforces Tauri updater signatures, checksums, pinned source provenance,
+and the final asset gate. Test-signed or invalidly signed installers are never
+accepted as unsigned. Unsigned installers may show Windows SmartScreen or
+Unknown Publisher warnings.
 
-Freeze the official repository's `main` branch from the moment the official tag
-is created until `Finalize Release` completes. Every stage pins and rechecks the
-official Tag SHA and the CI/CD build SHA. `Finalize Release` normally runs from
-that exact CI/CD SHA; a later CI/CD commit is accepted only when the build SHA is
-its ancestor and every intervening change is limited to release automation or
-release documentation. Any application, dependency, or packaging-input change
-after the build intentionally stops the release.
+## Tauri Updater Key
+
+The updater plugin is enabled with `createUpdaterArtifacts: true`, so every
+build produces signed update artifacts. The public key in
+`src-tauri/tauri.conf.json` must belong to a key pair generated for this
+project.
+
+**Do not ship a build with the upstream project's updater public key.** A
+signature produced by the upstream private key would pass verification in this
+app, which means a third party could publish an update that this application
+accepts as genuine.
+
+Generate a fresh key pair and store the private half in CI secrets:
+
+```bash
+npx tauri signer generate -w ~/.tauri/talkwithyourai.key
+```
+
+Put the printed public key into `updater.pubkey` in
+`src-tauri/tauri.conf.json`, and store `TAURI_SIGNING_PRIVATE_KEY` (the
+private key contents) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` as secrets on
+this repository. Until this is done, update checks fail signature
+verification and fail silently with a warning; the app keeps working but no
+update can be installed.
+
+The updater `endpoints` value must point at this repository:
+
+```
+https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases/latest/download/latest.json
+```
+
+Release downloads redirect to `objects.githubusercontent.com`, so the CSP in
+`src-tauri/tauri.conf.json` must allow that domain as well.
 
 ## Windows Certificate Notes
 
@@ -124,12 +133,12 @@ Generate a release-only GPG key, export it, and base64 encode it:
 
 ```bash
 gpg --full-gen-key
-gpg --armor --export-secret-keys "OpenTypeless Release" > opentypeless-linux-private.asc
-openssl base64 -A -in opentypeless-linux-private.asc -out opentypeless-linux-private.asc.base64
+gpg --armor --export-secret-keys "TalkWithYourAI Release" > talkwithyourai-linux-private.asc
+openssl base64 -A -in talkwithyourai-linux-private.asc -out talkwithyourai-linux-private.asc.base64
 gpg --list-secret-keys --keyid-format LONG
 ```
 
-Save `opentypeless-linux-private.asc.base64` as `LINUX_GPG_PRIVATE_KEY`, the
+Save `talkwithyourai-linux-private.asc.base64` as `LINUX_GPG_PRIVATE_KEY`, the
 fingerprint/key ID as `LINUX_GPG_KEY_ID`, and the passphrase as
 `LINUX_GPG_PASSPHRASE`.
 
@@ -137,3 +146,12 @@ The workflow embeds an AppImage signature, signs RPM bundles through Tauri,
 creates detached `.asc` signatures for Linux artifacts, and uploads
 architecture-specific checksum manifests such as `SHA256SUMS-linux-x86_64.txt`
 and `SHA256SUMS-linux-aarch64.txt`.
+
+## Release Flow
+
+Freeze the repository's `main` branch from the moment the official tag is
+created until the release is finalized. Every stage pins and rechecks the
+official Tag SHA and the CI/CD build SHA, and each provenance manifest binds
+its platform assets to the exact SHA used for the build. Any application,
+dependency, or packaging-input change after the build intentionally stops the
+release.

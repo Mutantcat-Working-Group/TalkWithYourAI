@@ -8,7 +8,12 @@ use std::fmt;
 
 pub const MAX_IMPORT_BYTES: usize = 1024 * 1024;
 pub const MAX_IMPORT_ROWS: usize = 10_000;
-const CSV_MARKER: &str = "# opentypeless_dictionary";
+const CSV_MARKER: &str = "# talkwithyourai_dictionary";
+/// Upstream marker still accepted on import so older exports remain usable.
+const LEGACY_CSV_MARKER: &str = "# opentypeless_dictionary";
+const JSON_FORMAT: &str = "talkwithyourai_dictionary";
+/// Upstream JSON `format` value still accepted on import.
+const LEGACY_JSON_FORMAT: &str = "opentypeless_dictionary";
 const CSV_HEADER: [&str; 6] = [
     "type",
     "word",
@@ -133,14 +138,17 @@ fn parse_csv(text: &str) -> Result<ParsedDictionaryImport, DictionaryImportError
         .ok_or(DictionaryImportError::InvalidStructure)?
         .map_err(|_| DictionaryImportError::InvalidStructure)?;
 
-    let marked = first.len() == 2
-        && first.get(0).is_some_and(|value| value.trim() == CSV_MARKER)
-        && first.get(1).is_some_and(|value| value.trim() == "1");
-    if first
+    let has_marker = first
         .get(0)
-        .is_some_and(|value| value.trim().starts_with(CSV_MARKER))
-        && !marked
-    {
+        .map(str::trim)
+        .is_some_and(|value| value == CSV_MARKER || value == LEGACY_CSV_MARKER);
+    let marked =
+        has_marker && first.len() == 2 && first.get(1).is_some_and(|value| value.trim() == "1");
+    let looks_marked = first.get(0).is_some_and(|value| {
+        let value = value.trim();
+        value.starts_with(CSV_MARKER) || value.starts_with(LEGACY_CSV_MARKER)
+    });
+    if looks_marked && !marked {
         return Err(DictionaryImportError::InvalidStructure);
     }
     let header = if marked {
@@ -208,8 +216,10 @@ fn parse_json(text: &str) -> Result<ParsedDictionaryImport, DictionaryImportErro
         .as_object()
         .ok_or(DictionaryImportError::InvalidStructure)?;
     if let Some(format) = object.get("format") {
-        if format.as_str() != Some("opentypeless_dictionary")
-            || object.get("version").and_then(serde_json::Value::as_u64) != Some(1)
+        if !matches!(
+            format.as_str(),
+            Some(JSON_FORMAT) | Some(LEGACY_JSON_FORMAT)
+        ) || object.get("version").and_then(serde_json::Value::as_u64) != Some(1)
         {
             return Err(DictionaryImportError::InvalidStructure);
         }
@@ -590,7 +600,7 @@ pub fn export_dictionary_json(
         })
         .collect::<Vec<_>>();
     serde_json::to_string_pretty(&serde_json::json!({
-        "format": "opentypeless_dictionary",
+        "format": JSON_FORMAT,
         "version": 1,
         "dictionary": dictionary,
         "correctionRules": corrections,
@@ -665,7 +675,7 @@ mod tests {
             .unwrap()
             .as_nanos();
         let path = std::env::temp_dir().join(format!(
-            "opentypeless-dictionary-io-{name}-{}-{nonce}.sqlite",
+            "talkwithyourai-dictionary-io-{name}-{}-{nonce}.sqlite",
             std::process::id()
         ));
         DictionaryStore::new(path).unwrap()
@@ -676,7 +686,7 @@ mod tests {
         let input = concat!(
             "\u{feff}type,word,pronunciation,wrong_phrase,corrected_phrase,enabled\r\n",
             "dictionary,\"Open,Typeless\",\"open\r\ntypeless\",,,true\r\n",
-            "correction,,,\"open, type less\",OpenTypeless,true\r\n"
+            "correction,,,\"open, type less\",TalkWithYourAI,true\r\n"
         );
 
         let parsed = parse_dictionary_import(input.as_bytes(), ImportFormat::Csv).unwrap();
@@ -694,7 +704,7 @@ mod tests {
             parsed.rows[1],
             ParsedDictionaryRow::Correction {
                 pattern: "open, type less".to_string(),
-                replacement: "OpenTypeless".to_string(),
+                replacement: "TalkWithYourAI".to_string(),
                 enabled: true,
             }
         );
@@ -723,7 +733,7 @@ mod tests {
 
     #[test]
     fn parser_reports_mixed_valid_and_invalid_rows_without_mutation() {
-        let input = format!("OpenTypeless\n{}\n# ignored", "x".repeat(101));
+        let input = format!("TalkWithYourAI\n{}\n# ignored", "x".repeat(101));
 
         let parsed = parse_dictionary_import(input.as_bytes(), ImportFormat::Txt).unwrap();
 
@@ -738,8 +748,8 @@ mod tests {
         let standalone = br#"{
             "format":"opentypeless_dictionary",
             "version":1,
-            "dictionary":[{"word":"OpenTypeless","pronunciation":"open typeless"}],
-            "correctionRules":[{"pattern":"open type less","replacement":"OpenTypeless","enabled":false}]
+            "dictionary":[{"word":"TalkWithYourAI","pronunciation":"open typeless"}],
+            "correctionRules":[{"pattern":"open type less","replacement":"TalkWithYourAI","enabled":false}]
         }"#;
         let backup = br#"{"dictionary":[{"id":7,"word":"TalkMore","pronunciation":null}]}"#;
 
@@ -773,7 +783,7 @@ mod tests {
         }];
 
         let exported = export_dictionary_csv(&dictionary, &corrections).unwrap();
-        assert!(exported.starts_with("# opentypeless_dictionary,1"));
+        assert!(exported.starts_with("# talkwithyourai_dictionary,1"));
         assert!(exported.contains("'  =HYPERLINK"));
         assert!(exported.contains("'+cmd"));
         assert!(exported.contains("'-danger"));
@@ -796,24 +806,58 @@ dictionary,'=literal,,,,true\n";
     }
 
     #[test]
+    fn csv_parser_accepts_the_legacy_upstream_marker() {
+        let input = concat!(
+            "# opentypeless_dictionary,1\n",
+            "type,word,pronunciation,wrong_phrase,corrected_phrase,enabled\n",
+            "dictionary,Legacy,,,,true\n"
+        );
+
+        let parsed = parse_dictionary_import(input.as_bytes(), ImportFormat::Csv).unwrap();
+
+        assert_eq!(parsed.rows.len(), 1);
+        assert!(matches!(
+            &parsed.rows[0],
+            ParsedDictionaryRow::Dictionary { word, .. } if word == "Legacy"
+        ));
+    }
+
+    #[test]
+    fn json_parser_accepts_the_legacy_upstream_format_marker() {
+        let input = br#"{
+            "format":"opentypeless_dictionary",
+            "version":1,
+            "dictionary":[{"word":"Legacy","pronunciation":null}]
+        }"#;
+
+        let parsed = parse_dictionary_import(input, ImportFormat::Json).unwrap();
+
+        assert_eq!(parsed.rows.len(), 1);
+        assert!(matches!(
+            &parsed.rows[0],
+            ParsedDictionaryRow::Dictionary { word, .. } if word == "Legacy"
+        ));
+    }
+
+    #[test]
     fn json_export_contains_only_dictionary_subset() {
         let exported = export_dictionary_json(
             &[DictionaryEntry {
                 id: 9,
-                word: "OpenTypeless".to_string(),
+                word: "TalkWithYourAI".to_string(),
                 pronunciation: None,
             }],
             &[CorrectionRule {
                 id: 8,
                 pattern: "open type less".to_string(),
-                replacement: "OpenTypeless".to_string(),
+                replacement: "TalkWithYourAI".to_string(),
                 enabled: true,
             }],
         )
         .unwrap();
         let value: serde_json::Value = serde_json::from_str(&exported).unwrap();
 
-        assert_eq!(value["format"], "opentypeless_dictionary");
+        assert_eq!(value["format"], "talkwithyourai_dictionary");
         assert_eq!(value["version"], 1);
         assert!(value.get("dictionary").is_some());
         assert!(value.get("correctionRules").is_some());
@@ -825,15 +869,15 @@ dictionary,'=literal,,,,true\n";
     #[tokio::test]
     async fn preview_and_commit_dedupe_nfkc_case_and_pairs() {
         let store = temp_store("dedupe");
-        store.add("OpenTypeless", None).await.unwrap();
+        store.add("TalkWithYourAI", None).await.unwrap();
         store
-            .add_correction("open type less", "OpenTypeless")
+            .add_correction("open type less", "TalkWithYourAI")
             .await
             .unwrap();
         let parsed = ParsedDictionaryImport {
             rows: vec![
                 ParsedDictionaryRow::Dictionary {
-                    word: "ＯＰＥＮＴＹＰＥＬＥＳＳ".to_string(),
+                    word: "ＴＡＬＫＷＩＴＨＹＯＵＲＡＩ".to_string(),
                     pronunciation: None,
                 },
                 ParsedDictionaryRow::Dictionary {
@@ -842,7 +886,7 @@ dictionary,'=literal,,,,true\n";
                 },
                 ParsedDictionaryRow::Correction {
                     pattern: " OPEN TYPE LESS ".to_string(),
-                    replacement: "opentypeless".to_string(),
+                    replacement: "talkwithyourai".to_string(),
                     enabled: true,
                 },
             ],

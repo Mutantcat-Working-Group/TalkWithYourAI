@@ -1,7 +1,7 @@
 {
-  "name": "opentypeless",
+  "name": "talkwithyourai",
   "private": true,
-  "version": "1.1.64",
+  "version": "1.0.20261110",
   "type": "module",
   "description": "AI-powered speech-to-text and text polishing desktop app",
   "keywords": [
@@ -14,13 +14,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/tover0314-w/opentypeless"
+    "url": "https://github.com/Mutantcat-Working-Group/TalkWithYourAI"
   },
-  "homepage": "https://www.opentypeless.com",
+  "homepage": "https://github.com/Mutantcat-Working-Group/TalkWithYourAI",
   "bugs": {
-    "url": "https://github.com/tover0314-w/opentypeless/issues"
+    "url": "https://github.com/Mutantcat-Working-Group/TalkWithYourAI/issues"
   },
-  "author": "OpenTypeless Contributors",
+  "author": "TalkWithYourAI Contributors",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
@@ -42,7 +42,6 @@
     "@tauri-apps/plugin-process": "^2.3.1",
     "@tauri-apps/plugin-store": "^2.2",
     "@tauri-apps/plugin-updater": "^2.10.1",
-    "better-auth": "1.6.25",
     "framer-motion": "^11.18",
     "i18next": "^24.2",
     "lucide-react": "^0.460",

@@ -89,46 +89,15 @@ mod tests {
     use super::*;
     use crate::llm::prompt::CONTEXT_PROMPT_VERSION;
 
-    const MANAGED_BASE: &str = "https://www.opentypeless.com/api/proxy";
-
-    #[test]
-    fn model_capabilities_requires_exact_certified_tuple() {
-        assert_eq!(
-            model_capability("cloud", MANAGED_BASE, "default", CONTEXT_PROMPT_VERSION),
-            ModelCapability::Certified
-        );
-    }
-
-    #[test]
-    fn model_capabilities_marks_same_provider_surface_as_best_effort() {
-        assert_eq!(
-            model_capability(
-                "cloud",
-                MANAGED_BASE,
-                "another-model",
-                CONTEXT_PROMPT_VERSION
-            ),
-            ModelCapability::BestEffort
-        );
-        assert_eq!(
-            model_capability("cloud", MANAGED_BASE, "default", "context-v2"),
-            ModelCapability::BestEffort
-        );
-    }
-
     #[test]
     fn model_capabilities_treats_custom_blank_and_unlisted_as_unknown() {
         assert_eq!(
             model_capability(
-                "cloud",
-                "https://custom.example/api/proxy",
-                "default",
-                CONTEXT_PROMPT_VERSION,
+                "openrouter",
+                "https://openrouter.ai/api/v1",
+                "",
+                CONTEXT_PROMPT_VERSION
             ),
-            ModelCapability::Unknown
-        );
-        assert_eq!(
-            model_capability("cloud", MANAGED_BASE, "", CONTEXT_PROMPT_VERSION),
             ModelCapability::Unknown
         );
         assert_eq!(

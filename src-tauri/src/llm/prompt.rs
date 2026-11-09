@@ -750,9 +750,9 @@ mod tests {
 
     #[test]
     fn test_build_prompt_with_dictionary() {
-        let dict = vec!["OpenTypeless".to_string(), "Tauri".to_string()];
+        let dict = vec!["TalkWithYourAI".to_string(), "Tauri".to_string()];
         let prompt = build_system_prompt(AppType::General, &dict, "", "preserve", false, "", false);
-        assert!(prompt.contains("\"OpenTypeless\""));
+        assert!(prompt.contains("\"TalkWithYourAI\""));
         assert!(prompt.contains("\"Tauri\""));
     }
 

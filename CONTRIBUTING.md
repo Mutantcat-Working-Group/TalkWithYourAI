@@ -1,4 +1,4 @@
-# Contributing to OpenTypeless
+# Contributing to TalkWithYourAI
 
 Thanks for your interest in contributing! This guide covers everything you need to get started.
 
@@ -13,8 +13,8 @@ Thanks for your interest in contributing! This guide covers everything you need 
 | Type | Process |
 |------|---------|
 | Bug fix / small improvement | Open a PR directly |
-| New feature / architecture change | Start a [Discussion](https://github.com/tover0314-w/opentypeless/discussions/categories/ideas) first |
-| Question / help | Post in [Q&A Discussions](https://github.com/tover0314-w/opentypeless/discussions/categories/q-a) |
+| New feature / architecture change | Open an issue first so the change can be discussed |
+| Question / help | Open an issue with the `question` label |
 
 ## Making Changes
 
@@ -75,6 +75,6 @@ We welcome contributions made with the help of AI tools (GitHub Copilot, Claude,
 - Stability and reliability across all platforms
 - User experience improvements
 - Additional STT and LLM provider integrations
-- Internationalization coverage
+- Keeping the app fully local-first: no accounts, no backend, no telemetry
 
 See [VISION.md](VISION.md) for the project's long-term direction.

@@ -14,16 +14,13 @@ const locales = { de, en, es, fr, it: itLocale, ja, ko, pt, ru, zh }
 
 const requiredErrorKeys = [
   'stt_timeout',
-  'stt_invalid_key',
   'stt_failed',
-  'stt_quota_exceeded',
   'stt_no_speech_detected',
   'output_fallback_clipboard',
   'output_wayland_unsupported',
   'accessibility_required',
   'output_streaming_partial',
   'llm_failed',
-  'llm_quota_exceeded',
 ] as const
 
 const requiredCapsuleErrorKeys = [

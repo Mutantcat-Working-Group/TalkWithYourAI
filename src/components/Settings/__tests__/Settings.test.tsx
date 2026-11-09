@@ -107,7 +107,7 @@ vi.mock('../../../lib/tauri', () => ({
   startAskFlow: vi.fn().mockResolvedValue(undefined),
   startAskDictation: vi.fn().mockResolvedValue(undefined),
   stopAskDictation: vi.fn().mockResolvedValue({
-    question: 'What is OpenTypeless?',
+    question: 'What is TalkWithYourAI?',
     answer: 'A concise answer.',
   }),
   abortAskDictation: vi.fn().mockResolvedValue(undefined),
@@ -226,28 +226,6 @@ vi.mock('../../../components/toast-service', () => ({
 
 // ─── Mock @tauri-apps/plugin-opener ─────────────────────────────────────────
 vi.mock('@tauri-apps/plugin-opener', () => ({ openUrl: vi.fn() }))
-
-// ─── Mock stores/authStore ────────────────────────────────────────────────────
-const mockAuthState = {
-  user: null,
-  plan: 'free',
-  source: 'free',
-  cloudWordsLimit: 0,
-  licenseStatus: null,
-}
-
-vi.mock('../../../stores/authStore', () => ({
-  hasManagedCloudAccess: (state: typeof mockAuthState) =>
-    state.licenseStatus !== 'refunded' &&
-    state.licenseStatus !== 'deactivated' &&
-    ((state.source === 'creem' && state.cloudWordsLimit > 0) ||
-      (state.source === 'appsumo' &&
-        state.cloudWordsLimit > 0 &&
-        state.licenseStatus === 'active') ||
-      state.plan === 'pro'),
-  useAuthStore: (selector: any) =>
-    typeof selector === 'function' ? selector(mockAuthState) : mockAuthState,
-}))
 
 // ─── Import components AFTER mocks ───────────────────────────────────────────
 import { Settings } from '../index'
@@ -706,14 +684,13 @@ describe('Settings tab 切换', () => {
     expect(screen.getByPlaceholderText('dictionary.word')).toBeDefined()
   })
 
-  it('点击 Scenes 后显示本地 scenes 空状态（user=null）', () => {
+  it('clicking Scenes shows the local scenes empty state', () => {
     renderSettings()
     clickSidebarItem('settings.scenes')
     expect(screen.getByText('scenes.myScenes')).toBeDefined()
     expect(screen.getByText('scenes.noCustomScenes')).toBeDefined()
     expect(screen.getByText('scenes.newScene')).toBeDefined()
     expect(screen.queryByText('scenes.cloudPacks')).toBeNull()
-    expect(screen.queryByText('scenes.signInToBrowse')).toBeNull()
   })
 
   it('点击 About 后显示版本信息区域', () => {

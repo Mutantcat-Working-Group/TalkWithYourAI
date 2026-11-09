@@ -2,7 +2,7 @@
 set -euo pipefail
 
 wrapper_dir="$(cd "$(dirname "$0")" && pwd)"
-real_plugin="$wrapper_dir/.opentypeless-linuxdeploy-plugin-appimage-real"
+real_plugin="$wrapper_dir/.talkwithyourai-linuxdeploy-plugin-appimage-real"
 appdir=""
 
 if [[ ! -x "$real_plugin" ]]; then

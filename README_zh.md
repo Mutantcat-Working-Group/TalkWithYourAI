@@ -1,12 +1,8 @@
 <p align="center">
-  <a href="README.md">English</a> | <strong>中文</strong> | <a href="README_ja.md">日本語</a> | <a href="README_ko.md">한국어</a> | <a href="README_es.md">Español</a> | <a href="README_fr.md">Français</a> | <a href="README_de.md">Deutsch</a> | <a href="README_pt.md">Português</a> | <a href="README_ru.md">Русский</a> | <a href="README_ar.md">العربية</a> | <a href="README_hi.md">हिन्दी</a> | <a href="README_it.md">Italiano</a> | <a href="README_tr.md">Türkçe</a> | <a href="README_vi.md">Tiếng Việt</a> | <a href="README_th.md">ภาษาไทย</a> | <a href="README_id.md">Bahasa Indonesia</a> | <a href="README_pl.md">Polski</a> | <a href="README_nl.md">Nederlands</a>
+  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="TalkWithYourAI Logo" />
 </p>
 
-<p align="center">
-  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="OpenTypeless Logo" />
-</p>
-
-<h1 align="center">OpenTypeless</h1>
+<h1 align="center">TalkWithYourAI</h1>
 
 <p align="center">
   开源版 Wispr Flow / Superwhisper：面向 macOS、Windows 和 Linux 的 AI 语音输入、改写和语音问答工具。
@@ -14,44 +10,22 @@
 
 <p align="center">
   无论你在写邮件、写代码、聊天还是做笔记 — 只需按下热键，<br/>
-  说出你的想法，OpenTypeless 会用 AI 转录并润色你的语音，<br/>
+  说出你的想法，TalkWithYourAI 会用 AI 转录并润色你的语音，<br/>
   然后直接输入到你正在使用的任何应用中。
 </p>
 
 <p align="center">
-  如果 OpenTypeless 对你的工作流有帮助，欢迎点一个 GitHub Star，让更多人发现这个项目。
+  <a href="https://github.com/Mutantcat-Working-Group/TalkWithYourAI/actions/workflows/ci.yml"><img src="https://github.com/Mutantcat-Working-Group/TalkWithYourAI/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/Mutantcat-Working-Group/TalkWithYourAI" alt="License" /></a>
 </p>
 
 <p align="center">
-  <strong>任意应用听写</strong> · <strong>改写选中文本</strong> · <strong>语音 Ask 一次性问答</strong> · <strong>自备密钥或使用托管 cloud words</strong>
+  <strong>任意应用听写</strong> · <strong>改写选中文本</strong> · <strong>语音 Ask 一次性问答</strong> · <strong>自备 API 密钥</strong>
 </p>
 
-<p align="center">
-  <a href="https://github.com/tover0314-w/opentypeless/actions/workflows/ci.yml"><img src="https://github.com/tover0314-w/opentypeless/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="https://github.com/tover0314-w/opentypeless/releases"><img src="https://img.shields.io/github/v/release/tover0314-w/opentypeless?color=2ABBA7" alt="Release" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/tover0314-w/opentypeless" alt="License" /></a>
-  <a href="https://github.com/tover0314-w/opentypeless/stargazers"><img src="https://img.shields.io/github/stars/tover0314-w/opentypeless?style=social" alt="Stars" /></a>
-  <a href="https://discord.gg/V6rRpJ4RGD"><img src="https://img.shields.io/badge/Discord-Join%20us-5865F2?logo=discord&logoColor=white" alt="Discord" /></a>
-</p>
-
-<p align="center">
-  <img src="docs/images/v1.1.49-app-context-showcase.jpg" width="820" alt="OpenTypeless 在 Gmail、Slack、Google Docs、Cursor、Zendesk 和 LinkedIn 中的应用感知语音输入" />
-</p>
-
-<p align="center">
-  <img src="docs/images/voice-flow-demo.gif" width="720" alt="OpenTypeless 演示" />
-</p>
-
-## v1.1.55 新功能
-
-- **新用户购买已切换到 Stripe**，已有 Creem 订阅继续有效，不影响存量用户权益。
-- **云端登录和付费流程更可靠**，会话改为安全存储，并完善了服务故障提示与账号状态恢复。
-- **语音识别和 AI 服务更稳定**，加入连接复用与预热，修复 Deepgram、AssemblyAI 结尾内容丢失以及 Custom Whisper 查询参数丢失。
-- **支持更新的大模型接口**，包括 GPT-5/o 系列和 Anthropic Claude 原生 Messages API，同时继续支持通过 OpenRouter 使用 Claude。
-- **更多语音识别选择和更清晰的录音时长**，新增分区域 Qwen3 ASR Realtime，并根据服务商能力显示录音限制。
-- **平台兼容性继续提升**，新增 Linux ARM64 安装包、Wayland 直接输入适配，以及更安全的 Windows 组合键输出。
-
-完整改动和经过验证的安装包请查看[最新正式版](https://github.com/tover0314-w/opentypeless/releases/latest)。
+> **Fork 说明：** TalkWithYourAI 基于 [tover0314-w/opentypeless](https://github.com/tover0314-w/opentypeless)（MIT 许可）修改而来。本分支只做本地运行：账号、订阅和托管云端这一整层已被移除，应用无需登录、不依赖任何后端服务，语音识别与 AI 润色只使用你自己配置的 API 密钥。原版权声明保留在 `LICENSE` 与 `THIRD_PARTY_NOTICES.md` 中。
+>
+> 上游的多语言 README（日语、韩语、西班牙语、法语、德语、葡萄牙语、俄语、阿拉伯语、印地语、意大利语、土耳其语、越南语、泰语、印尼语、波兰语、荷兰语）已随上游内容一并删除。本仓库此后只维护本文件与 [README.md](README.md) 两份。
 
 ## 产品亮点
 
@@ -62,30 +36,14 @@
 - **更完整的本地词典**支持纠错规则以及词典导入导出。
 - **按应用设置写作风格**，可覆盖内置应用分类，为特定应用指定其他写作场景。
 
-应用识别、映射、词典和纠错规则都保存在本地。应用感知润色只会向配置的 LLM 发送内部应用分类和经过审核的风格元数据；原始窗口标题和文档内容不会作为应用上下文发送，也不会写入历史记录。
+应用识别、映射、词典、纠错规则、历史记录和场景都保存在本机 SQLite 中。应用感知润色只会向配置的 LLM 发送内部应用分类和经过审核的风格元数据；原始窗口标题和文档内容不会作为应用上下文发送，也不会写入历史记录。
 
-| 应用感知 AI 润色 | 本地词典与纠错规则 |
-| --- | --- |
-| <img src="docs/images/v1.1.49-app-aware-polish.jpg" width="420" alt="OpenTypeless v1.1.49 应用感知 AI 润色" /> | <img src="docs/images/v1.1.49-dictionary.jpg" width="420" alt="OpenTypeless v1.1.49 本地词典与纠错规则" /> |
-
-<details>
-<summary>更多截图</summary>
-
-<p align="center">
-  <img src="docs/images/app-main-light.png" width="720" alt="OpenTypeless 主窗口" />
-</p>
-
-| 设置 | 历史记录 |
-|---|---|
-| <img src="docs/images/app-settings.png" width="360" /> | <img src="docs/images/app-history.png" width="360" /> |
-
-</details>
 
 ---
 
 ## Ask Anything
 
-Ask Anything 不是聊天页，也不是另一个输入框。它是一个快捷键优先的语音问答流程：按下 Ask 热键，说出问题，停止录音后，OpenTypeless 会先转写问题，再调用 LLM，最后只把答案显示在一个小便签里。
+Ask Anything 不是聊天页，也不是另一个输入框。它是一个快捷键优先的语音问答流程：按下 Ask 热键，说出问题，停止录音后，TalkWithYourAI 会先转写问题，再调用 LLM，最后只把答案显示在一个小便签里。
 
 它适合临时问一句、快速查一句、让 AI 根据当前选中文本解释/总结/改写一句。默认没有聊天历史、没有输入框、没有额外发送按钮，结果可以直接复制。
 
@@ -99,20 +57,23 @@ Ask Anything 不是聊天页，也不是另一个输入框。它是一个快捷�
 
 Linux 暂时保持 `Ctrl+/` 和 `Ctrl+.` 作为默认热键，因为不同桌面环境，尤其是 Wayland 下，全局 `Right Alt` 监听不如 Windows 稳定。
 
-## 为什么选择 OpenTypeless？
+## 为什么选择 TalkWithYourAI？
 
-| | OpenTypeless | macOS 听写 | Windows 语音输入 | Whisper Desktop |
+| | TalkWithYourAI | macOS 听写 | Windows 语音输入 | Whisper Desktop |
 |---|---|---|---|---|
 | AI 文本润色 | ✅ 多种 LLM | ❌ | ❌ | ❌ |
 | Ask Anything 语音问答 | ✅ | ❌ | ❌ | ❌ |
-| STT 服务商选择 | ✅ Cloud、Deepgram、AssemblyAI、Whisper 兼容、Doubao 等 | ❌ 仅 Apple | ❌ 仅 Microsoft | ❌ 仅 Whisper |
+| STT 服务商选择 | ✅ Deepgram、AssemblyAI、Whisper 兼容、Doubao、Apple Speech 等 | ❌ 仅 Apple | ❌ 仅 Microsoft | ❌ 仅 Whisper |
 | 适用于任意应用 | ✅ | ✅ | ✅ | ❌ 需复制粘贴 |
 | 翻译模式 | ✅ | ❌ | ❌ | ❌ |
 | 选中文本改写 | ✅ | ❌ | ❌ | ❌ |
+| 应用感知写作 | ✅ 本地识别与映射 | ❌ | ❌ | ❌ |
+| 多快捷键 | ✅ 按工作流分别配置 | ❌ | ❌ | ❌ |
+| 无需账号 | ✅ | ✅ | ✅ | ✅ |
 | 开源 | ✅ MIT | ❌ | ❌ | ✅ |
 | 跨平台 | ✅ Win/Mac/Linux | ❌ 仅 Mac | ❌ 仅 Windows | ✅ |
 | 自定义词典 | ✅ | ❌ | ❌ | ❌ |
-| 可自托管 | ✅ BYOK | ❌ | ❌ | ✅ |
+| 自备密钥 | ✅ BYOK | ❌ | ❌ | ✅ |
 
 ## 功能特性
 
@@ -128,7 +89,7 @@ Linux 暂时保持 `Ctrl+/` 和 `Ctrl+.` 作为默认热键，因为不同桌面
 - 🌐 翻译模式：说中文，输出英文（或其他 20+ 语言）
 - 📖 自定义词典和本地纠错规则，提升专业术语与常见错词处理
 - 🧩 内置场景、本地自定义场景、导入导出和激活状态
-- 🔐 BYOK 密钥优先存入系统密钥库，尽量避免明文保存在配置里
+- 🔐 API 密钥优先存入系统密钥库，尽量避免明文保存在配置里
 - 🔍 自动识别当前应用，适配不同场景
 - 📜 本地历史记录，支持全文搜索
 - 🌗 深色 / 浅色 / 跟随系统主题
@@ -150,17 +111,27 @@ Linux 暂时保持 `Ctrl+/` 和 `Ctrl+.` 作为默认热键，因为不同桌面
 
 下载适用于你平台的最新版本：
 
-**[下载最新正式版](https://github.com/tover0314-w/opentypeless/releases/latest)**
+**[下载最新正式版](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases/latest)**
 
 | 平台 | 文件 |
 |------|------|
-| Windows | `.msi` 安装包或 `.exe` 安装程序 |
+| Windows | NSIS `.exe` 安装程序 |
 | macOS | Apple Silicon 和 Intel 通用 `.dmg` |
-| Linux | `.AppImage` / `.deb` / `.rpm` |
+| Linux | `.AppImage` / `.deb` |
+
+版本号采用日期式格式：`1.0.YYYYMMDD`（例如 `1.0.20261110`）。
 
 ## 安装说明
 
-各平台签名和分发方式还在持续完善。请始终从官方 [GitHub Releases](https://github.com/tover0314-w/opentypeless/releases) 下载。
+发布包由 [`.github/workflows/release.yml`](.github/workflows/release.yml) 生成。请始终从本仓库的 [GitHub Releases](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases) 下载。
+
+macOS 构建为 **ad-hoc 签名**，既不是 Developer ID 签名，也没有经过公证，Gatekeeper 仍会在首次启动时拦截 —— 右键应用选择**打开**，或执行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/TalkWithYourAI.app
+```
+
+自动更新产物需要 minisign 密钥。在把 `TAURI_SIGNING_PRIVATE_KEY`（及 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`）配置为仓库 secrets、**并且**用配套公钥替换 `src-tauri/tauri.conf.json` 里的 `pubkey` 之前，workflow 会以关闭 `createUpdaterArtifacts` 的方式构建，不发布更新签名。配置里现有的 `pubkey` 属于上游原作者，保留它意味着第三方可以签出本应用会接受的更新，因此首次公开发布前必须替换。
 
 ### Windows
 
@@ -177,10 +148,10 @@ Linux 暂时保持 `Ctrl+/` 和 `Ctrl+.` 作为默认热键，因为不同桌面
 
 ### macOS
 
-macOS 构建使用 Developer ID 签名。如果首次启动仍被 Gatekeeper 拦截，可以执行：
+macOS 构建为 ad-hoc 签名，首次启动会被 Gatekeeper 拦截。右键应用选择**打开**，或执行：
 
 ```bash
-xattr -cr /Applications/OpenTypeless.app
+xattr -dr com.apple.quarantine /Applications/TalkWithYourAI.app
 ```
 
 然后正常打开应用。
@@ -190,23 +161,32 @@ xattr -cr /Applications/OpenTypeless.app
 **Ubuntu/Debian** 安装 `.deb`：
 
 ```bash
-sudo apt install ./OpenTypeless_x.x.x_amd64.deb
+sudo apt install ./TalkWithYourAI_1.0.20261110_amd64.deb
 ```
 
 **AppImage** 直接运行：
 
 ```bash
-chmod +x OpenTypeless_x.x.x_amd64.AppImage
-./OpenTypeless_x.x.x_amd64.AppImage
+chmod +x TalkWithYourAI_1.0.20261110_amd64.AppImage
+./TalkWithYourAI_1.0.20261110_amd64.AppImage
 ```
 
 **NVIDIA + Wayland 用户：**应用会自动识别并应用兼容处理。如果仍然启动崩溃，可以尝试：
 
 ```bash
-WEBKIT_DISABLE_DMABUF_RENDERER=1 ./OpenTypeless
+WEBKIT_DISABLE_DMABUF_RENDERER=1 ./TalkWithYourAI
 ```
 
-**Wayland 用户：**安装 `wtype` 后，OpenTypeless 可以把结果直接输入当前应用。Ubuntu/Debian 使用 `sudo apt install wtype`，Arch/Manjaro 使用 `sudo pacman -S wtype`。全局热键仍可能受桌面环境限制；如果未安装 `wtype`，OpenTypeless 会退回为复制结果到剪贴板。
+Linux 兼容开关也可以用以下环境变量强制开启。优先读取 `TALKWITHYOURAI_*` 新名称；旧的 `OPENTYPELESS_*` 名称仍作为上游兼容别名继续生效：
+
+| 首选名称 | 兼容别名 |
+| --- | --- |
+| `TALKWITHYOURAI_DISABLE_WEBKIT_DMABUF` | `OPENTYPELESS_DISABLE_WEBKIT_DMABUF` |
+| `TALKWITHYOURAI_DISABLE_WEBKIT_COMPOSITING` | `OPENTYPELESS_DISABLE_WEBKIT_COMPOSITING` |
+| `TALKWITHYOURAI_FORCE_GDK_X11` | `OPENTYPELESS_FORCE_GDK_X11` |
+| `TALKWITHYOURAI_FORCE_SOFTWARE_GL` | `OPENTYPELESS_FORCE_SOFTWARE_GL` |
+
+**Wayland 用户：**安装 `wtype` 后，TalkWithYourAI 可以把结果直接输入当前应用。Ubuntu/Debian 使用 `sudo apt install wtype`，Arch/Manjaro 使用 `sudo pacman -S wtype`。全局热键仍可能受桌面环境限制；如果未安装 `wtype`，TalkWithYourAI 会退回为复制结果到剪贴板。
 
 ## 前置要求
 
@@ -233,51 +213,34 @@ npm run tauri build
 
 所有设置均可在应用内的设置面板中访问：
 
-- **语音识别** — 选择 STT 服务商并输入 API 密钥
+- **语音识别** — 选择 STT 服务商并输入 API 密钥、base URL 和模型
 - **AI 润色** — 选择 LLM 服务商、模型、API 密钥、润色风格、自定义提示词、翻译和选中文本上下文
 - **通用** — 听写热键、Ask 热键、输出模式、开机自启和胶囊空闲隐藏
 - **词典** — 添加自定义术语和本地纠错规则
 - **场景** — 内置/本地提示词模板，支持导入导出
-- **账户 / Upgrade** — 登录、查看 cloud words、管理 Pro 或 Lifetime Starter 权益
+- **关于** — 版本号、仓库地址和许可信息
 
-API 密钥会优先存入系统密钥库，不支持时使用本地 fallback。BYOK 密钥不会发送到 OpenTypeless 服务器 — 所有 STT/LLM 请求直接发送到你配置的服务商。
+API 密钥会优先存入系统密钥库，不支持时使用本地 fallback。密钥不会发送到本项目的任何服务器 — 所有 STT/LLM 请求都直接从你的机器发送到你配置的服务商。
 
-### Cloud 选项
+### 仅本地运行
 
-OpenTypeless 还提供可选的托管云端能力，这样你不需要自己配置 STT/LLM API key。Pro 和 Lifetime Starter 包含共享的 cloud words，可用于语音识别、AI 润色和 Ask Anything。BYOK 仍然完整支持。
+TalkWithYourAI 没有账号、没有订阅、也没有托管云端。一切都在你的机器上运行：
 
-[了解更多关于 Pro 的信息](https://www.opentypeless.com)
+1. 在设置中选择任意 STT 和 LLM 服务商
+2. 输入你自己的 API 密钥（或指向本地端点，例如 Ollama 或自建 Whisper 服务）
+3. 完成 — 历史记录、词典、纠错规则、场景和应用映射都保存在本机 SQLite 中，除了你选择的服务商之外不会发出任何请求
 
-### BYOK（自备密钥）vs Cloud
+如果想完全不联网运行，可以配合本地 Whisper 兼容 STT 端点和本地 OpenAI 兼容 LLM（如 Ollama）使用。
 
-| | BYOK 模式 | Cloud 模式 |
-|---|---|---|
-| STT | 自己的 API 密钥或本地端点 | 托管 cloud words |
-| LLM | 自己的 API 密钥或本地端点 | 托管 cloud words |
-| 云依赖 | 无 — 所有请求直接发送到你的服务商 | 需要连接 www.opentypeless.com |
-| 费用 | 直接向服务商付费 | 可选 Pro 或 Lifetime Starter |
+## 从旧安装迁移
 
-所有核心功能 — 录音、转录、AI 润色、键盘/剪贴板输出、词典、历史记录 — 在 BYOK 模式下完全不依赖 OpenTypeless 服务器。
+bundle identifier、产品名、keyring 服务名和数据库文件名都已变更，因此本应用与本分支所基于的旧版本是两个独立的应用。数据不会自动继承，两者可以同时安装、互不干扰。
 
-### 自托管 / 无云依赖
+迁移方式：
 
-无需任何云依赖即可运行 OpenTypeless：
-
-1. 在设置中选择任意非 Cloud 的 STT 和 LLM 服务商
-2. 输入你自己的 API 密钥
-3. 完成 — 无需账户或连接 www.opentypeless.com
-
-如果你想将可选的云功能指向自己的后端，在构建前设置以下环境变量：
-
-| 变量 | 默认值 | 说明 |
-|---|---|---|
-| `VITE_API_BASE_URL` | `https://www.opentypeless.com` | 前端云 API 基础 URL |
-| `API_BASE_URL` | `https://www.opentypeless.com` | Rust 后端云 API 基础 URL |
-
-```bash
-# 示例：使用自定义后端构建
-VITE_API_BASE_URL=https://my-server.example.com API_BASE_URL=https://my-server.example.com npm run tauri build
-```
+- **历史 / 词典 / 场景**：把旧应用数据目录中的 SQLite 文件复制到新应用数据目录，并改名为新数据库文件名（`talkwithyourai.db`）。词典和场景也可以在应用内导出后重新导入。
+- **设置**：`tauri-plugin-store` 的 `settings.json` 同样位于应用数据目录，里面存有应用配置、窗口位置和 `onboarding_completed` 标记。建议一并复制，否则需要重新走一遍引导页并丢失窗口位置。
+- **API 密钥**：密钥保存在系统密钥库中，服务名已变更，因此不会自动跟随。请在新应用里重新填写。
 
 ## 架构
 
@@ -293,21 +256,20 @@ flowchart TB
   Pipeline --> LLMs["LLM 服务商"]
   Pipeline --> Storage["SQLite 历史记录 + 词典"]
   Pipeline --> Output["键盘 / 剪贴板输出"]
-  Account["账户 + 更新 + 云端额度"] --> UI
-  Account --> Tauri
+  Updater["自动更新"] --> UI
 ```
 
 ```
 src/                  # React 前端（TypeScript）
 ├── components/       # UI 组件（Settings、History、Capsule 等）
 ├── hooks/            # React hooks（录音、主题、Tauri 事件）
-├── lib/              # 工具库（API 客户端、路由、常量）
+├── lib/              # 工具库（服务商客户端、路由、常量）
 └── stores/           # Zustand 状态管理
 
 src-tauri/src/        # Rust 后端
 ├── audio/            # 音频采集（cpal）
-├── stt/              # STT 服务商（Deepgram、AssemblyAI、Whisper 兼容、Cloud）
-├── llm/              # LLM 服务商（OpenAI 兼容、Cloud）
+├── stt/              # STT 服务商（Deepgram、AssemblyAI、Whisper 兼容、Apple Speech）
+├── llm/              # LLM 服务商（OpenAI 兼容与原生接口）
 ├── output/           # 文本输出（键盘模拟、剪贴板粘贴）
 ├── storage/          # 配置（tauri-plugin-store）+ 历史/词典（SQLite）
 ├── app_detector/     # 检测当前活动应用
@@ -322,26 +284,28 @@ src-tauri/src/        # Rust 后端
 - [ ] 更清晰的 Linux 桌面环境兼容说明
 - [ ] 更多工作流预设：写作、代码、客服回复等
 - [ ] 插件式服务商扩展
+- [ ] 本仓库的发版流水线（自动更新 endpoint 已指向本仓库，发版流程是后续任务）
 
 ## 常见问题
 
-**我的音频会上传到云端吗？**
-在 BYOK 模式下，音频直接发送到你选择的 STT 服务商或本地端点，不经过 OpenTypeless 服务器。在 Cloud 模式下，音频会发送到托管代理，用于转录和额度统计。
+**我的音频会被发到服务商以外的地方吗？**
+音频直接从你的机器发送到你配置的 STT 服务商或本地端点，不经过本项目运营的任何服务器 — 应用本身不含任何后端。
 
 **可以离线使用吗？**
-使用本地 STT 服务商（通过 Ollama 运行 Whisper）和本地 LLM（Ollama），应用可以完全离线工作，无需网络连接。
+配合本地 Whisper 兼容 STT 端点和本地 OpenAI 兼容 LLM（如 Ollama），应用可以完全不联网工作。
 
 **支持哪些语言？**
 STT 根据服务商不同支持 99+ 种语言。AI 润色和翻译支持 20+ 种目标语言。
 
 **应用免费吗？**
-是的。使用自己的 API 密钥（BYOK）即可完整使用所有功能。Cloud 计划是可选的。
+是的。使用自己的 API 密钥即可完整使用所有功能，没有付费档位、订阅或账号。
+
+**需要登录吗？**
+不需要。应用没有账号系统，首次启动直接进入服务商配置流程。
 
 ## 社区
 
-- 💬 [Discord](https://discord.gg/V6rRpJ4RGD) — 交流、获取帮助、分享反馈
-- 🗣️ [GitHub Discussions](https://github.com/tover0314-w/opentypeless/discussions) — 功能提案、问答
-- 🐛 [Issue Tracker](https://github.com/tover0314-w/opentypeless/issues) — Bug 报告和功能请求
+- 🐛 [Issue Tracker](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/issues) — Bug 报告和功能请求
 - 📖 [贡献指南](CONTRIBUTING.md) — 开发环境搭建和贡献规范
 - 🔒 [安全策略](SECURITY.md) — 负责任地报告漏洞
 - 🧭 [愿景](VISION.md) — 项目原则和路线图方向
@@ -350,22 +314,6 @@ STT 根据服务商不同支持 99+ 种语言。AI 润色和翻译支持 20+ 种
 
 欢迎贡献！请参阅 [CONTRIBUTING.md](CONTRIBUTING.md) 了解开发设置和指南。
 
-寻找入手点？查看标记为 [`good first issue`](https://github.com/tover0314-w/opentypeless/labels/good%20first%20issue) 的 issue。
-
-## Star History
-
-<a href="https://star-history.com/#tover0314-w/opentypeless&Date">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=tover0314-w/opentypeless&type=Date&theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=tover0314-w/opentypeless&type=Date" />
-    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=tover0314-w/opentypeless&type=Date" />
-  </picture>
-</a>
-
-## 借助 Claude Code 一天完成开发
-
-整个项目在一天之内借助 [Claude Code](https://claude.com/claude-code) 完成开发 — 从架构设计到完整实现，包括 Tauri 后端、React 前端、CI/CD 流水线以及本 README。
-
 ## 许可证
 
-[MIT](LICENSE)
+[MIT](LICENSE)。按 MIT 许可要求，本项目所基于的上游项目的原版权声明保留在 `LICENSE` 与 `THIRD_PARTY_NOTICES.md` 中。

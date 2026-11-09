@@ -837,7 +837,7 @@ fn probe_clipboard_write_restore() -> ProbeResult {
     };
 
     let sentinel = format!(
-        "opentypeless-diagnostic-{}",
+        "talkwithyourai-diagnostic-{}",
         chrono::Utc::now().timestamp_nanos_opt().unwrap_or_default()
     );
     if let Err(error) = clipboard.set_text(sentinel.clone()) {

@@ -158,11 +158,11 @@ describe('DictionaryPane', () => {
 
   it('searches words, pronunciations, wrong phrases, and replacements locally', () => {
     mockAppStore.dictionary = [
-      { id: 1, word: 'OpenTypeless', pronunciation: 'open typeless' },
+      { id: 1, word: 'TalkWithYourAI', pronunciation: 'open typeless' },
       { id: 2, word: 'MeloLab', pronunciation: 'mee-lo' },
     ]
     mockAppStore.correctionRules = [
-      { id: 3, pattern: 'open type less', replacement: 'OpenTypeless', enabled: true },
+      { id: 3, pattern: 'open type less', replacement: 'TalkWithYourAI', enabled: true },
     ]
     render(<DictionaryPane />)
 
@@ -170,7 +170,7 @@ describe('DictionaryPane', () => {
       target: { value: 'mee-lo' },
     })
     expect(screen.getByText('MeloLab')).toBeInTheDocument()
-    expect(screen.queryByText('OpenTypeless')).toBeNull()
+    expect(screen.queryByText('TalkWithYourAI')).toBeNull()
 
     fireEvent.click(screen.getByRole('button', { name: 'Corrections' }))
     fireEvent.change(screen.getByPlaceholderText('Search dictionary'), {
@@ -182,7 +182,7 @@ describe('DictionaryPane', () => {
   it('edits dictionary and correction rows inline', async () => {
     mockAppStore.dictionary = [{ id: 1, word: 'Token', pronunciation: null }]
     mockAppStore.correctionRules = [
-      { id: 2, pattern: 'open type less', replacement: 'OpenTypeless', enabled: true },
+      { id: 2, pattern: 'open type less', replacement: 'TalkWithYourAI', enabled: true },
     ]
     render(<DictionaryPane />)
 
@@ -221,8 +221,8 @@ describe('DictionaryPane', () => {
       skippedInvalid: 1,
       errors: [{ row: 4, code: 'dictionary_word_too_long' }],
     })
-    const file = new File(['OpenTypeless'], 'terms.txt', { type: 'text/plain' })
-    const bytes = new TextEncoder().encode('OpenTypeless')
+    const file = new File(['TalkWithYourAI'], 'terms.txt', { type: 'text/plain' })
+    const bytes = new TextEncoder().encode('TalkWithYourAI')
     Object.defineProperty(file, 'arrayBuffer', {
       value: vi.fn().mockResolvedValue(bytes.buffer),
     })

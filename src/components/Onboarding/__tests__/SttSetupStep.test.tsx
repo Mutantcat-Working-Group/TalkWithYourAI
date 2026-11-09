@@ -28,6 +28,10 @@ vi.mock('react-i18next', () => ({
         'onboarding.stt.customWhisperConfigured': 'Custom Whisper',
         'providers.stt.deepgram': 'Deepgram',
         'providers.stt.customWhisper': 'Custom Whisper',
+        'settings.customSttBaseUrl': 'Base URL',
+        'settings.customSttBaseUrlPlaceholder': 'http://localhost:8000/v1',
+        'settings.customSttModel': 'Model',
+        'settings.customSttModelPlaceholder': 'Systran/faster-whisper-large-v3',
       })[key] ?? key,
   }),
 }))
@@ -56,7 +60,7 @@ beforeEach(() => {
 afterEach(() => cleanup())
 
 describe('SttSetupStep', () => {
-  it('does not offer managed Cloud inside BYOK provider setup', () => {
+  it('does not offer a cloud provider inside provider setup', () => {
     render(<SttSetupStep />)
 
     const providerSelect = screen.getByRole('combobox')
@@ -73,10 +77,35 @@ describe('SttSetupStep', () => {
 
     render(<SttSetupStep />)
 
-    expect(screen.getByText('Custom Whisper')).toBeInTheDocument()
-    expect(screen.getByText('http://localhost:9000/v1')).toBeInTheDocument()
-    expect(screen.getByText('local-large-v3')).toBeInTheDocument()
+    expect(screen.getAllByRole('combobox')[0]).toHaveValue('custom-whisper')
+    expect(screen.getByDisplayValue('http://localhost:9000/v1')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('local-large-v3')).toBeInTheDocument()
     expect(mockStore.updateConfig).not.toHaveBeenCalledWith({ stt_provider: 'deepgram' })
+  })
+
+  it('lets users edit the custom endpoint and model during onboarding', () => {
+    mockStore.config = {
+      ...mockStore.config,
+      stt_provider: 'custom-whisper',
+      stt_custom_base_url: 'http://localhost:9000/v1',
+      stt_custom_model: 'local-large-v3',
+    }
+
+    render(<SttSetupStep />)
+
+    fireEvent.change(screen.getByDisplayValue('http://localhost:9000/v1'), {
+      target: { value: 'http://192.168.1.12:9000/v1' },
+    })
+    expect(mockStore.updateConfig).toHaveBeenCalledWith({
+      stt_custom_base_url: 'http://192.168.1.12:9000/v1',
+    })
+
+    fireEvent.change(screen.getByDisplayValue('local-large-v3'), {
+      target: { value: 'whisper-large-v3' },
+    })
+    expect(mockStore.updateConfig).toHaveBeenCalledWith({
+      stt_custom_model: 'whisper-large-v3',
+    })
   })
 
   it('tests Custom Whisper with its configured endpoint and model', async () => {

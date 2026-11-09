@@ -62,13 +62,13 @@ mod tests {
     fn appends_the_wayland_client_exclusion_without_changing_existing_arguments() {
         let arguments = forwarded_arguments([
             OsString::from("--appdir"),
-            OsString::from("OpenTypeless.AppDir"),
+            OsString::from("TalkWithYourAI.AppDir"),
         ]);
         assert_eq!(
             arguments,
             [
                 "--appdir",
-                "OpenTypeless.AppDir",
+                "TalkWithYourAI.AppDir",
                 "--exclude-library",
                 WAYLAND_CLIENT_GLOB,
             ]

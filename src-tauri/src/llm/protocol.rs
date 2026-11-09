@@ -317,6 +317,87 @@ mod tests {
     }
 
     #[test]
+    fn custom_openai_compatible_provider_uses_the_user_base_url_verbatim() {
+        for (base_url, expected) in [
+            (
+                "http://localhost:8000/v1",
+                "http://localhost:8000/v1/chat/completions",
+            ),
+            (
+                "http://127.0.0.1:1234/v1",
+                "http://127.0.0.1:1234/v1/chat/completions",
+            ),
+            (
+                "http://192.168.1.50:8080/v1",
+                "http://192.168.1.50:8080/v1/chat/completions",
+            ),
+            (
+                "http://10.0.0.9:8000/v1",
+                "http://10.0.0.9:8000/v1/chat/completions",
+            ),
+            (
+                "http://llm.internal:8000/v1/chat/completions",
+                "http://llm.internal:8000/v1/chat/completions",
+            ),
+        ] {
+            let provider = crate::llm::CUSTOM_LLM_PROVIDER;
+            assert_eq!(
+                detect_api_kind(provider, base_url),
+                LlmApiKind::OpenAiCompatible
+            );
+            assert_eq!(chat_endpoint(provider, base_url).unwrap(), expected);
+        }
+        assert_eq!(
+            models_endpoint(crate::llm::CUSTOM_LLM_PROVIDER, "http://localhost:8000/v1").unwrap(),
+            "http://localhost:8000/v1/models"
+        );
+    }
+
+    #[test]
+    fn custom_openai_compatible_provider_allows_plain_http_and_omits_empty_auth() {
+        let request = apply_auth_headers(
+            reqwest::Client::new().post("http://localhost:8000/v1/chat/completions"),
+            crate::llm::CUSTOM_LLM_PROVIDER,
+            "http://localhost:8000/v1",
+            "",
+        )
+        .build()
+        .unwrap();
+        assert!(request.headers().get("Authorization").is_none());
+
+        let keyed = apply_auth_headers(
+            reqwest::Client::new().post("http://localhost:8000/v1/chat/completions"),
+            crate::llm::CUSTOM_LLM_PROVIDER,
+            "http://localhost:8000/v1",
+            "local-secret",
+        )
+        .build()
+        .unwrap();
+        assert_eq!(keyed.headers()["Authorization"], "Bearer local-secret");
+
+        let body = build_chat_body(
+            crate::llm::CUSTOM_LLM_PROVIDER,
+            "http://localhost:8000/v1",
+            "my-model",
+            messages(),
+            512,
+            0.2,
+            false,
+        );
+        assert_eq!(body["model"], "my-model");
+        assert_eq!(body["max_tokens"], 512);
+    }
+
+    #[test]
+    fn local_endpoint_credentials_are_still_rejected() {
+        assert!(chat_endpoint(
+            crate::llm::CUSTOM_LLM_PROVIDER,
+            "http://user:pass@localhost:8000/v1"
+        )
+        .is_err());
+    }
+
+    #[test]
     fn claude_on_openrouter_stays_openai_compatible() {
         assert_eq!(
             detect_api_kind("claude", "https://openrouter.ai/api/v1"),

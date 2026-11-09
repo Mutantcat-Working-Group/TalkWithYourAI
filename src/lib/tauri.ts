@@ -128,13 +128,12 @@ export async function saveOnboardingConfig(config: AppConfig): Promise<AppConfig
     await setCredential('stt', 'custom-whisper', config.stt_custom_api_key)
   } else if (
     config.stt_api_key?.trim() &&
-    config.stt_provider !== 'cloud' &&
     config.stt_provider !== 'custom-whisper' &&
     config.stt_provider !== 'apple-speech'
   ) {
     await setCredential('stt', config.stt_provider, config.stt_api_key)
   }
-  if (config.llm_api_key?.trim() && config.llm_provider !== 'cloud') {
+  if (config.llm_api_key?.trim()) {
     await setCredential('llm', config.llm_provider, config.llm_api_key)
   }
   const sanitized = configWithoutProviderSecrets(config)
@@ -143,13 +142,8 @@ export async function saveOnboardingConfig(config: AppConfig): Promise<AppConfig
 }
 
 export type RecordingLimitMode = 'auto' | 'custom'
-export type SttTransport = 'fileUpload' | 'streaming' | 'localBuffered' | 'managedUpload'
-export type RecordingLimitSource =
-  | 'provider'
-  | 'managedProduct'
-  | 'clientBuffer'
-  | 'productSafety'
-  | 'unknownUpstream'
+export type SttTransport = 'fileUpload' | 'streaming' | 'localBuffered'
+export type RecordingLimitSource = 'provider' | 'clientBuffer' | 'productSafety' | 'unknownUpstream'
 
 export interface SttRecordingCapability {
   registryVersion: number
@@ -320,7 +314,7 @@ export interface SttProviderDiagnosticIssue {
 
 export interface SttProviderDiagnostics {
   provider: string
-  kind: 'localCompatible' | 'builtinLocal' | 'byokRemote' | 'cloudManaged' | 'unknown'
+  kind: 'localCompatible' | 'builtinLocal' | 'byokRemote' | 'unknown'
   endpoint: string | null
   model: string | null
   requiresApiKey: boolean
@@ -516,19 +510,6 @@ export async function getHistory(limit: number, offset: number): Promise<History
 
 export async function clearHistory(): Promise<void> {
   return invoke('clear_history')
-}
-
-export interface RestoreBackupResult {
-  history: HistoryEntry[]
-  dictionary: DictionaryEntry[]
-  correctionRules: CorrectionRule[]
-}
-
-export async function restoreBackupData(
-  history: unknown | null,
-  dictionary: unknown | null,
-): Promise<RestoreBackupResult> {
-  return invoke('restore_backup_data', { history, dictionary })
 }
 
 // Dictionary

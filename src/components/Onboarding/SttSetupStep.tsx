@@ -46,37 +46,48 @@ export function SttSetupStep() {
 
   return (
     <div className="space-y-5">
-      {isCustomWhisper ? (
-        <Field label={t('onboarding.stt.serviceLabel')}>
-          <div className="rounded-[10px] border border-border bg-bg-secondary px-3 py-2.5">
-            <p className="text-[13px] font-medium text-text-primary">
-              {t('onboarding.stt.customWhisperConfigured')}
-            </p>
-            <p className="mt-1 truncate text-[11px] text-text-tertiary">
-              {config.stt_custom_base_url}
-            </p>
-            <p className="mt-0.5 truncate text-[11px] text-text-tertiary">
-              {config.stt_custom_model}
-            </p>
-          </div>
-        </Field>
-      ) : (
-        <Field label={t('onboarding.stt.serviceLabel')}>
-          <select
-            value={selectedProvider}
-            onChange={(e) => {
-              updateConfig({ stt_provider: e.target.value as AppConfig['stt_provider'] })
-              setSttTestStatus('idle')
-            }}
-            className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-[10px] text-[13px] text-text-primary outline-none focus:border-border-focus transition-colors"
-          >
-            {ONBOARDING_STT_PROVIDERS.map((p) => (
-              <option key={p.value} value={p.value}>
-                {t(p.labelKey)}
-              </option>
-            ))}
-          </select>
-        </Field>
+      <Field label={t('onboarding.stt.serviceLabel')}>
+        <select
+          value={selectedProvider}
+          onChange={(e) => {
+            updateConfig({ stt_provider: e.target.value as AppConfig['stt_provider'] })
+            setSttTestStatus('idle')
+          }}
+          className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-[10px] text-[13px] text-text-primary outline-none focus:border-border-focus transition-colors"
+        >
+          {ONBOARDING_STT_PROVIDERS.map((p) => (
+            <option key={p.value} value={p.value}>
+              {t(p.labelKey)}
+            </option>
+          ))}
+        </select>
+      </Field>
+
+      {isCustomWhisper && (
+        <>
+          <Field label={t('settings.customSttBaseUrl')}>
+            <input
+              value={config.stt_custom_base_url}
+              onChange={(e) => {
+                updateConfig({ stt_custom_base_url: e.target.value })
+                setSttTestStatus('idle')
+              }}
+              placeholder={t('settings.customSttBaseUrlPlaceholder')}
+              className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-[10px] text-[13px] text-text-primary outline-none focus:border-border-focus transition-colors"
+            />
+          </Field>
+          <Field label={t('settings.customSttModel')}>
+            <input
+              value={config.stt_custom_model}
+              onChange={(e) => {
+                updateConfig({ stt_custom_model: e.target.value })
+                setSttTestStatus('idle')
+              }}
+              placeholder={t('settings.customSttModelPlaceholder')}
+              className="w-full px-3 py-2.5 bg-bg-secondary border border-border rounded-[10px] text-[13px] text-text-primary outline-none focus:border-border-focus transition-colors"
+            />
+          </Field>
+        </>
       )}
 
       <Field label={t('onboarding.stt.apiKeyLabel')}>

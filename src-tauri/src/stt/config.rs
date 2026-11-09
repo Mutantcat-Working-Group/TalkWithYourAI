@@ -112,10 +112,7 @@ pub fn build_known_whisper_config(provider: &str) -> Option<WhisperCompatConfig>
 }
 
 pub fn stt_provider_requires_api_key(provider: &str) -> bool {
-    !matches!(
-        provider,
-        "cloud" | CUSTOM_WHISPER_PROVIDER | APPLE_SPEECH_PROVIDER
-    )
+    !matches!(provider, CUSTOM_WHISPER_PROVIDER | APPLE_SPEECH_PROVIDER)
 }
 
 #[cfg(test)]
@@ -167,11 +164,6 @@ mod tests {
     #[test]
     fn test_assemblyai_not_in_whisper_config() {
         assert!(get_whisper_config("assemblyai").is_none());
-    }
-
-    #[test]
-    fn test_cloud_not_in_whisper_config() {
-        assert!(get_whisper_config("cloud").is_none());
     }
 
     #[test]
@@ -228,6 +220,45 @@ mod tests {
 
         assert!(credentials.contains("credentials"));
         assert!(fragment.contains("fragment"));
+    }
+
+    #[test]
+    fn custom_whisper_accepts_plain_http_local_and_private_endpoints() {
+        for (base_url, expected) in [
+            (
+                "http://localhost:8000/v1",
+                "http://localhost:8000/v1/audio/transcriptions",
+            ),
+            (
+                "http://127.0.0.1:8080/v1",
+                "http://127.0.0.1:8080/v1/audio/transcriptions",
+            ),
+            (
+                "http://192.168.1.20:8000/v1",
+                "http://192.168.1.20:8000/v1/audio/transcriptions",
+            ),
+            (
+                "http://10.1.2.3:9000/v1",
+                "http://10.1.2.3:9000/v1/audio/transcriptions",
+            ),
+        ] {
+            assert_eq!(
+                normalize_custom_whisper_endpoint(base_url).unwrap(),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn custom_whisper_is_the_only_keyless_whisper_provider() {
+        assert!(!stt_provider_requires_api_key(CUSTOM_WHISPER_PROVIDER));
+        assert!(stt_provider_requires_api_key("openai-whisper"));
+        assert!(stt_provider_requires_api_key("groq-whisper"));
+        assert!(
+            !build_custom_whisper_config("http://localhost:8000/v1", "local-model")
+                .unwrap()
+                .api_key_required
+        );
     }
 
     #[test]

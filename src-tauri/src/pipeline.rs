@@ -15,7 +15,6 @@ use crate::llm::{self, LlmConfig, PolishRequest};
 use crate::output;
 use crate::storage;
 use crate::stt::{self, SttConfig, TranscriptEvent};
-use crate::SessionTokenStore;
 
 // ─── Timing constants ───
 
@@ -122,25 +121,6 @@ const SELECTED_TEXT_CAPTURE_DELAY_MS: u64 = 60;
 const VOLUME_POLL_INTERVAL_MS: u64 = 50;
 /// Timeout for STT finalization after recording stops.
 const STT_FINALIZE_TIMEOUT_SECS: u64 = 120;
-
-fn generate_cloud_operation_id() -> String {
-    static COUNTER: AtomicU64 = AtomicU64::new(1);
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let counter = COUNTER.fetch_add(1, Ordering::Relaxed) as u128;
-    let mixed = now ^ (counter << 64);
-
-    format!(
-        "{:08x}-{:04x}-{:04x}-{:04x}-{:012x}",
-        (mixed >> 96) as u32,
-        (mixed >> 80) as u16,
-        (mixed >> 64) as u16,
-        (mixed >> 48) as u16,
-        mixed & 0x0000_ffff_ffff_ffff_ffffu128
-    )
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, serde::Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -295,20 +275,42 @@ fn voice_intent_requires_generated_output(kind: crate::voice_intent::VoiceIntent
     )
 }
 
+/// Returns true when a user-supplied base URL points at this machine or a
+/// private LAN address. Used only for history classification, never to block
+/// requests — self-hosted endpoints on plain http must keep working.
+fn is_local_or_private_base_url(base_url: &str) -> bool {
+    let Ok(parsed) = url::Url::parse(base_url.trim()) else {
+        return false;
+    };
+    match parsed.host() {
+        Some(url::Host::Ipv4(address)) => {
+            address.is_loopback() || address.is_private() || address.is_link_local()
+        }
+        Some(url::Host::Ipv6(address)) => {
+            // fc00::/7 unique-local addresses, checked manually to stay
+            // compatible with the crate's minimum supported Rust version.
+            address.is_loopback() || (address.segments()[0] & 0xfe00) == 0xfc00
+        }
+        Some(url::Host::Domain(domain)) => {
+            let domain = domain.trim_end_matches('.').to_ascii_lowercase();
+            domain == "localhost" || domain.ends_with(".localhost") || domain.ends_with(".local")
+        }
+        None => false,
+    }
+}
+
 fn history_provider_kind(config: &storage::AppConfig) -> storage::HistoryProviderKind {
     let provider = if config.polish_enabled {
         config.llm_provider.as_str()
     } else {
         config.stt_provider.as_str()
     };
-    if provider == "cloud" {
-        return storage::HistoryProviderKind::ManagedCloud;
-    }
     if provider == "ollama"
         || provider == "apple-speech"
         || (provider == "custom-whisper"
-            && (config.stt_custom_base_url.contains("localhost")
-                || config.stt_custom_base_url.contains("127.0.0.1")))
+            && is_local_or_private_base_url(&config.stt_custom_base_url))
+        || (provider == crate::llm::CUSTOM_LLM_PROVIDER
+            && is_local_or_private_base_url(&config.llm_base_url))
     {
         return storage::HistoryProviderKind::Local;
     }
@@ -713,7 +715,6 @@ pub struct PipelineHandle {
     preloaded_correction_rules: Arc<Mutex<Option<Vec<llm::CorrectionRule>>>>,
     preloaded_selected_text: Arc<Mutex<Option<String>>>,
     preloaded_voice_mode: Arc<Mutex<Option<crate::voice_intent::VoiceMode>>>,
-    cloud_operation_id: Arc<Mutex<Option<String>>>,
     recording_start: Arc<Mutex<Option<std::time::Instant>>>,
     active_translation_operation: Arc<Mutex<Option<TranslationOperationState>>>,
     shared_client: reqwest::Client,
@@ -732,7 +733,6 @@ struct PolishTextInput<'a> {
     dictionary_words: Vec<String>,
     correction_rules: Vec<llm::CorrectionRule>,
     selected_text: Option<String>,
-    session_token: String,
     operation_id: Option<String>,
     voice_intent: crate::voice_intent::VoiceIntent,
     popup_fallback_enabled: bool,
@@ -979,7 +979,6 @@ impl PipelineHandle {
             preloaded_correction_rules: Arc::new(Mutex::new(None)),
             preloaded_selected_text: Arc::new(Mutex::new(None)),
             preloaded_voice_mode: Arc::new(Mutex::new(None)),
-            cloud_operation_id: Arc::new(Mutex::new(None)),
             recording_start: Arc::new(Mutex::new(None)),
             active_translation_operation: Arc::new(Mutex::new(None)),
             shared_client,
@@ -1004,14 +1003,14 @@ impl PipelineHandle {
         // Update tray tooltip + menu to reflect pipeline state
         if let Some(tray_handle) = self.app_handle.try_state::<crate::TrayHandle>() {
             let tooltip = match new_state {
-                PipelineState::Preparing => "OpenTypeless - Preparing...",
-                PipelineState::Recording => "OpenTypeless - Recording...",
-                PipelineState::Transcribing => "OpenTypeless - Transcribing...",
-                PipelineState::Polishing => "OpenTypeless - Polishing...",
-                PipelineState::Outputting => "OpenTypeless - Outputting...",
-                PipelineState::AskRecording => "OpenTypeless - Ask...",
-                PipelineState::AskThinking => "OpenTypeless - Answering...",
-                PipelineState::Idle => "OpenTypeless",
+                PipelineState::Preparing => "TalkWithYourAI - Preparing...",
+                PipelineState::Recording => "TalkWithYourAI - Recording...",
+                PipelineState::Transcribing => "TalkWithYourAI - Transcribing...",
+                PipelineState::Polishing => "TalkWithYourAI - Polishing...",
+                PipelineState::Outputting => "TalkWithYourAI - Outputting...",
+                PipelineState::AskRecording => "TalkWithYourAI - Ask...",
+                PipelineState::AskThinking => "TalkWithYourAI - Answering...",
+                PipelineState::Idle => "TalkWithYourAI",
             };
             if let Ok(t) = tray_handle.tray.lock() {
                 let _ = t.set_tooltip(Some(tooltip));
@@ -1080,10 +1079,6 @@ impl PipelineHandle {
             .unwrap_or_else(|e| e.into_inner())
             .clear();
         *self.stt_error.lock().unwrap_or_else(|e| e.into_inner()) = None;
-        *self
-            .cloud_operation_id
-            .lock()
-            .unwrap_or_else(|e| e.into_inner()) = None;
 
         // Force state to Idle — emits pipeline:state event to sync frontend
         self.set_state(PipelineState::Idle);
@@ -1191,14 +1186,7 @@ impl PipelineHandle {
             .lock()
             .unwrap_or_else(|e| e.into_inner()) = Some(correction_rules);
 
-        let stt_api_key = if config_data.stt_provider == "cloud" {
-            self.app_handle
-                .state::<SessionTokenStore>()
-                .0
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .clone()
-        } else {
+        let stt_api_key = {
             match resolve_stt_config_secret(&config_data, &SystemCredentialVault) {
                 Ok(secret) => secret,
                 Err(error) => {
@@ -1298,12 +1286,6 @@ impl PipelineHandle {
             };
 
         // Prepare STT configuration before starting the shared audio/STT readiness phase.
-        let cloud_operation_id = generate_cloud_operation_id();
-        *self
-            .cloud_operation_id
-            .lock()
-            .unwrap_or_else(|e| e.into_inner()) = Some(cloud_operation_id.clone());
-
         let stt_config = SttConfig {
             api_key: stt_api_key,
             language: if config_data.stt_language == "multi" {
@@ -1319,21 +1301,11 @@ impl PipelineHandle {
             } else {
                 None
             },
-            operation_id: Some(cloud_operation_id),
-            managed_audio: stt::capabilities::managed_audio_encoding_config(
-                &config_data,
-                chrono::Utc::now().timestamp(),
-            ),
+            operation_id: None,
             provider_region: (config_data.stt_provider
                 == stt::aliyun_qwen3_asr::ALIYUN_QWEN3_ASR_PROVIDER)
                 .then(|| config_data.stt_aliyun_qwen_region.clone()),
         };
-        let managed_cloud_session_token =
-            (config_data.stt_provider == "cloud").then(|| stt_config.api_key.clone());
-        if let Some(session_token) = managed_cloud_session_token.clone() {
-            stt::cloud::warm_managed_cloud_on_intent(self.shared_client.clone(), session_token);
-        }
-
         let mut provider = match stt::create_provider(
             &config_data.stt_provider,
             custom_whisper_config,
@@ -1498,11 +1470,7 @@ impl PipelineHandle {
         }
 
         let session_id = self.active_stt_session_id.fetch_add(1, Ordering::SeqCst) + 1;
-        let resolved_limit = stt::capabilities::resolve_recording_limit(
-            &config_data,
-            None,
-            chrono::Utc::now().timestamp(),
-        );
+        let resolved_limit = stt::capabilities::resolve_recording_limit(&config_data);
         let effective_max_seconds = provider
             .recording_limit_override_seconds()
             .map_or(resolved_limit.effective_max_seconds, |override_seconds| {
@@ -1520,29 +1488,6 @@ impl PipelineHandle {
         );
         self.active_deadline_session_id
             .store(session_id, Ordering::SeqCst);
-        if let Some(session_token) = managed_cloud_session_token {
-            let warmup_client = self.shared_client.clone();
-            let warmup_active_session_id = self.active_deadline_session_id.clone();
-            tokio::spawn(async move {
-                for elapsed_seconds in [240u64, 480] {
-                    if elapsed_seconds >= u64::from(effective_max_seconds) {
-                        break;
-                    }
-                    tokio::time::sleep_until(tokio::time::Instant::from_std(
-                        capture_ready_at.monotonic
-                            + std::time::Duration::from_secs(elapsed_seconds),
-                    ))
-                    .await;
-                    if warmup_active_session_id.load(Ordering::SeqCst) != session_id {
-                        break;
-                    }
-                    stt::cloud::warm_managed_cloud_on_intent(
-                        warmup_client.clone(),
-                        session_token.clone(),
-                    );
-                }
-            });
-        }
         *self
             .recording_start
             .lock()
@@ -1621,7 +1566,6 @@ impl PipelineHandle {
                             Some(data) => {
                                 if let Err(error) = provider.send_audio(&data).await {
                                     tracing::error!("STT send audio error: {}", error);
-                                    crate::error::emit_cloud_session_invalid(&app_handle, &error);
                                     if let Some(user_error) = latch_stt_task_error_if_active(
                                         abort_flag_ref.as_ref(),
                                         active_session_id_ref.as_ref(),
@@ -1671,10 +1615,6 @@ impl PipelineHandle {
                                             active_session_id_ref.as_ref(),
                                             stt_control.id,
                                         ) {
-                                            crate::error::emit_cloud_session_invalid(
-                                                &app_handle,
-                                                &e,
-                                            );
                                             let user_error = e.to_user_error();
                                             *stt_error_ref.lock().unwrap_or_else(|e| e.into_inner()) =
                                                 Some((stt_control.id, user_error.clone()));
@@ -1737,7 +1677,6 @@ impl PipelineHandle {
                                     active_session_id_ref.as_ref(),
                                     stt_control.id,
                                 ) {
-                                    crate::error::emit_cloud_session_invalid(&app_handle, &e);
                                     let user_error = e.to_user_error();
                                     *stt_error_ref.lock().unwrap_or_else(|e| e.into_inner()) =
                                         Some((stt_control.id, user_error.clone()));
@@ -1836,7 +1775,7 @@ impl PipelineHandle {
         // Update tray for transcribing state
         if let Some(tray_handle) = self.app_handle.try_state::<crate::TrayHandle>() {
             if let Ok(t) = tray_handle.tray.lock() {
-                let _ = t.set_tooltip(Some("OpenTypeless - Transcribing..."));
+                let _ = t.set_tooltip(Some("TalkWithYourAI - Transcribing..."));
             }
         }
         crate::refresh_tray(&self.app_handle);
@@ -1923,29 +1862,12 @@ impl PipelineHandle {
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .take();
-        let operation_id = self
-            .cloud_operation_id
-            .lock()
-            .unwrap_or_else(|e| e.into_inner())
-            .take();
         let voice_mode = self
             .preloaded_voice_mode
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .take()
             .unwrap_or(crate::voice_intent::VoiceMode::Dictate);
-
-        // Extract session token before releasing guard (for cloud LLM)
-        let session_token = if config.llm_provider == "cloud" {
-            self.app_handle
-                .state::<SessionTokenStore>()
-                .0
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .clone()
-        } else {
-            String::new()
-        };
 
         // All shared state has been taken — release the lock so a new start()
         // isn't blocked by the long stt_done wait that follows.
@@ -1995,8 +1917,7 @@ impl PipelineHandle {
                 dictionary_words,
                 correction_rules,
                 selected_text,
-                session_token,
-                operation_id,
+                operation_id: None,
                 voice_intent,
                 popup_fallback_enabled: true,
             })
@@ -2134,7 +2055,6 @@ impl PipelineHandle {
             dictionary_words,
             correction_rules,
             selected_text,
-            session_token,
             operation_id,
             voice_intent,
             popup_fallback_enabled,
@@ -2158,22 +2078,17 @@ impl PipelineHandle {
                 message,
             );
         };
-        let llm_api_key = if config.llm_provider == "cloud" {
-            session_token
-        } else {
-            match resolve_llm_config_secret(config, &SystemCredentialVault) {
-                Ok(secret) => secret,
-                Err(error) => {
-                    tracing::warn!("Failed to read LLM credential: {error}");
-                    String::new()
-                }
+        let llm_api_key = match resolve_llm_config_secret(config, &SystemCredentialVault) {
+            Ok(secret) => secret,
+            Err(error) => {
+                tracing::warn!("Failed to read LLM credential: {error}");
+                String::new()
             }
         };
 
         // Check if polish is enabled and API key / token is available
         if !config.polish_enabled
-            || (config.llm_provider != "cloud"
-                && !llm::has_usable_provider_credentials(&config.llm_provider, &llm_api_key))
+            || !llm::has_usable_provider_credentials(&config.llm_provider, &llm_api_key)
         {
             if selected_text_command_requires_llm(selected_text.as_deref())
                 || voice_intent_requires_generated_output(voice_intent.kind)
@@ -2181,7 +2096,7 @@ impl PipelineHandle {
                 let message = if !config.polish_enabled {
                     "This voice command needs AI polish. Enable AI polish before drafting, translating, or editing."
                 } else {
-                    "This voice command needs a configured LLM provider or Cloud sign-in."
+                    "This voice command needs a configured LLM provider."
                 };
                 if let Err(error) =
                     crate::commands::ask::show_error_window(&self.app_handle, message.to_string())
@@ -2551,7 +2466,6 @@ impl PipelineHandle {
                 )
             }
             Err(e) => {
-                crate::error::emit_cloud_session_invalid(&self.app_handle, &e);
                 let elapsed = llm_start.elapsed();
                 if let Some(report) = streaming_report.as_ref() {
                     if report.has_inserted_text() {
@@ -2673,17 +2587,6 @@ impl PipelineHandle {
                 enabled: rule.enabled,
             })
             .collect::<Vec<_>>();
-        let session_token = if config.llm_provider == "cloud" {
-            self.app_handle
-                .state::<SessionTokenStore>()
-                .0
-                .lock()
-                .unwrap_or_else(|error| error.into_inner())
-                .clone()
-        } else {
-            String::new()
-        };
-
         let outcome = self
             .polish_text(PolishTextInput {
                 raw_text: utterance,
@@ -2693,7 +2596,6 @@ impl PipelineHandle {
                 dictionary_words,
                 correction_rules,
                 selected_text: None,
-                session_token,
                 operation_id: Some(operation_id.to_string()),
                 voice_intent,
                 popup_fallback_enabled: false,
@@ -2960,14 +2862,9 @@ impl PipelineHandle {
         Ok(insert_result)
     }
 
-    async fn pre_warm_endpoint(&self, endpoint: &str, managed_cloud: bool) {
+    async fn pre_warm_endpoint(&self, endpoint: &str) {
         tracing::debug!("Pre-warming HTTP connection to {}", endpoint);
         let request = self.shared_client.head(endpoint);
-        let request = if managed_cloud {
-            crate::with_desktop_client_version(request)
-        } else {
-            request
-        };
         if let Err(error) = request
             .timeout(std::time::Duration::from_secs(5))
             .send()
@@ -2983,39 +2880,21 @@ impl PipelineHandle {
         let config = self.load_config().await;
 
         let stt_endpoint = match config.stt_provider.as_str() {
-            "cloud" => {
-                let base = crate::api_base_url();
-                Some((format!("{}/api/proxy/stt", base), true))
+            "glm-asr" => {
+                Some("https://open.bigmodel.cn/api/paas/v4/audio/transcriptions".to_string())
             }
-            "glm-asr" => Some((
-                "https://open.bigmodel.cn/api/paas/v4/audio/transcriptions".to_string(),
-                false,
-            )),
-            "openai-whisper" => Some((
-                "https://api.openai.com/v1/audio/transcriptions".to_string(),
-                false,
-            )),
-            "groq-whisper" => Some((
-                "https://api.groq.com/openai/v1/audio/transcriptions".to_string(),
-                false,
-            )),
-            "siliconflow" => Some((
-                "https://api.siliconflow.cn/v1/audio/transcriptions".to_string(),
-                false,
-            )),
-            "deepgram" => Some(("https://api.deepgram.com/v1/listen".to_string(), false)),
-            "assemblyai" => Some((
-                "https://api.assemblyai.com/v2/transcript".to_string(),
-                false,
-            )),
-            stt::volcengine::VOLCENGINE_DOUBAO_PROVIDER => Some((
-                "https://openspeech.bytedance.com/api/v3/sauc/bigmodel_async".to_string(),
-                false,
-            )),
+            "openai-whisper" => Some("https://api.openai.com/v1/audio/transcriptions".to_string()),
+            "groq-whisper" => {
+                Some("https://api.groq.com/openai/v1/audio/transcriptions".to_string())
+            }
+            "siliconflow" => Some("https://api.siliconflow.cn/v1/audio/transcriptions".to_string()),
+            "deepgram" => Some("https://api.deepgram.com/v1/listen".to_string()),
+            "assemblyai" => Some("https://api.assemblyai.com/v2/transcript".to_string()),
+            stt::volcengine::VOLCENGINE_DOUBAO_PROVIDER => {
+                Some("https://openspeech.bytedance.com/api/v3/sauc/bigmodel_async".to_string())
+            }
             stt::config::CUSTOM_WHISPER_PROVIDER => {
-                stt::config::normalize_custom_whisper_endpoint(&config.stt_custom_base_url)
-                    .ok()
-                    .map(|endpoint| (endpoint, false))
+                stt::config::normalize_custom_whisper_endpoint(&config.stt_custom_base_url).ok()
             }
             _ => {
                 tracing::debug!(
@@ -3027,26 +2906,19 @@ impl PipelineHandle {
         };
 
         let llm_endpoint = if config.polish_enabled {
-            if config.llm_provider == "cloud" {
-                let base = crate::api_base_url();
-                Some((format!("{}/api/proxy/llm", base), true))
-            } else {
-                crate::llm::protocol::chat_endpoint(&config.llm_provider, &config.llm_base_url)
-                    .ok()
-                    .map(|endpoint| (endpoint, false))
-            }
+            crate::llm::protocol::chat_endpoint(&config.llm_provider, &config.llm_base_url).ok()
         } else {
             None
         };
 
         let warm_stt = async {
-            if let Some((endpoint, managed_cloud)) = stt_endpoint {
-                self.pre_warm_endpoint(&endpoint, managed_cloud).await;
+            if let Some(endpoint) = stt_endpoint {
+                self.pre_warm_endpoint(&endpoint).await;
             }
         };
         let warm_llm = async {
-            if let Some((endpoint, managed_cloud)) = llm_endpoint {
-                self.pre_warm_endpoint(&endpoint, managed_cloud).await;
+            if let Some(endpoint) = llm_endpoint {
+                self.pre_warm_endpoint(&endpoint).await;
             }
         };
         tokio::join!(warm_stt, warm_llm);
@@ -3740,15 +3612,9 @@ mod tests {
     fn history_provider_kind_uses_only_provider_classification() {
         let mut config = storage::AppConfig {
             polish_enabled: true,
-            llm_provider: "cloud".to_string(),
+            llm_provider: "openrouter".to_string(),
             ..Default::default()
         };
-        assert_eq!(
-            history_provider_kind(&config),
-            storage::HistoryProviderKind::ManagedCloud
-        );
-
-        config.llm_provider = "openrouter".to_string();
         assert_eq!(
             history_provider_kind(&config),
             storage::HistoryProviderKind::Byok
@@ -3758,6 +3624,55 @@ mod tests {
         assert_eq!(
             history_provider_kind(&config),
             storage::HistoryProviderKind::Local
+        );
+    }
+
+    #[test]
+    fn local_and_private_endpoints_are_classified_as_local() {
+        for url in [
+            "http://localhost:8000/v1",
+            "http://127.0.0.1:11434/v1",
+            "http://192.168.1.20:8000/v1",
+            "http://10.0.0.5:8000/v1",
+            "http://172.16.4.2:8000/v1",
+            "http://[::1]:8000/v1",
+            "http://stt.local:8000/v1",
+        ] {
+            assert!(is_local_or_private_base_url(url), "{url} should be local");
+        }
+
+        for url in [
+            "https://api.openai.com/v1",
+            "http://example.com/v1",
+            "not a url",
+        ] {
+            assert!(
+                !is_local_or_private_base_url(url),
+                "{url} should not be local"
+            );
+        }
+    }
+
+    #[test]
+    fn custom_llm_endpoint_on_a_private_host_is_history_local() {
+        let config = storage::AppConfig {
+            polish_enabled: true,
+            llm_provider: crate::llm::CUSTOM_LLM_PROVIDER.to_string(),
+            llm_base_url: "http://192.168.1.30:8000/v1".to_string(),
+            ..Default::default()
+        };
+        assert_eq!(
+            history_provider_kind(&config),
+            storage::HistoryProviderKind::Local
+        );
+
+        let remote = storage::AppConfig {
+            llm_base_url: "https://llm.example.com/v1".to_string(),
+            ..config
+        };
+        assert_eq!(
+            history_provider_kind(&remote),
+            storage::HistoryProviderKind::Byok
         );
     }
 }

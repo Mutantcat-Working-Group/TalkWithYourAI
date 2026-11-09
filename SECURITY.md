@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities through [GitHub Security Advisories](https://github.com/tover0314-w/opentypeless/security/advisories/new).
+Please report security vulnerabilities through [GitHub Security Advisories](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/security/advisories/new).
 
 **Do not open a public issue for security vulnerabilities.**
 
@@ -18,12 +18,11 @@ We will acknowledge your report within 72 hours and aim to release a fix within 
 
 ## Security Model
 
-OpenTypeless follows a **Bring Your Own Key (BYOK)** model:
+TalkWithYourAI follows a **Bring Your Own Key (BYOK)** model:
 
 - All API keys are stored locally on the user's machine via `tauri-plugin-store`
-- No cloud account or server-side storage is required for the core product
-- Audio data is sent directly from the user's machine to the chosen STT/LLM provider
-- Cloud proxy mode requires authentication via session token
+- No cloud account, no server-side storage, and no backend service is part of this product
+- Audio data is sent directly from the user's machine to the STT/LLM provider the user configured
 - The application does not collect telemetry or usage data
 - CSP is enabled in the Tauri webview
 

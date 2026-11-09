@@ -4,9 +4,7 @@ use tokio::sync::{watch, Notify};
 use crate::error::AppError;
 
 pub fn finalize_timeout(provider: &str, streaming_timeout: Duration) -> Duration {
-    if provider == "cloud" {
-        crate::cloud_request::STT_MAX_TIMEOUT + Duration::from_secs(15)
-    } else if provider == crate::stt::config::CUSTOM_WHISPER_PROVIDER
+    if provider == crate::stt::config::CUSTOM_WHISPER_PROVIDER
         || crate::stt::config::get_whisper_config(provider).is_some()
     {
         crate::stt::whisper_compat::FINALIZE_TIMEOUT
@@ -56,32 +54,6 @@ impl SttCancellation {
 mod tests {
     use super::*;
     use std::sync::Arc;
-
-    async fn delayed_cloud_completion(former_timeout: u64) {
-        let done = Arc::new(Notify::new());
-        let worker_done = done.clone();
-        let worker = tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(former_timeout + 1)).await;
-            worker_done.notify_one();
-        });
-        wait_for_completion(
-            &done,
-            finalize_timeout("cloud", Duration::from_secs(former_timeout)),
-        )
-        .await
-        .unwrap();
-        worker.await.unwrap();
-    }
-
-    #[tokio::test(start_paused = true)]
-    async fn cloud_ask_keeps_waiting_after_twelve_seconds() {
-        delayed_cloud_completion(12).await;
-    }
-
-    #[tokio::test(start_paused = true)]
-    async fn cloud_dictation_keeps_waiting_after_two_minutes() {
-        delayed_cloud_completion(120).await;
-    }
 
     #[tokio::test(start_paused = true)]
     async fn file_upload_ask_does_not_stop_after_twelve_seconds() {

@@ -6,7 +6,7 @@ const mockConfig = {
   hotkey: 'Fn',
   output_mode: 'keyboard',
   insertion_strategy: 'auto',
-  stt_provider: 'cloud',
+  stt_provider: 'glm-asr',
   hotkeys: {
     dictation: { primary: 'Fn', modifiers: [] },
   },
@@ -17,7 +17,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string) =>
       ({
         'onboarding.permissions.subtitle':
-          'OpenTypeless asks for access only when a feature needs it.',
+          'TalkWithYourAI asks for access only when a feature needs it.',
         'onboarding.permissions.microphone': 'Microphone',
         'onboarding.permissions.microphoneDesc': 'Capture your voice.',
         'onboarding.permissions.textOutput': 'Text output',
@@ -53,7 +53,7 @@ beforeEach(() => {
     hotkey: 'Fn',
     output_mode: 'keyboard',
     insertion_strategy: 'auto',
-    stt_provider: 'cloud',
+    stt_provider: 'glm-asr',
     hotkeys: {
       dictation: { primary: 'Fn', modifiers: [] },
     },

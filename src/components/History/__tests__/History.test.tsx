@@ -38,7 +38,7 @@ const entry: HistoryEntry = {
   browser_access_status: 'not_applicable',
   provider_kind: 'local',
   raw_text: 'open type less',
-  polished_text: 'OpenTypeless',
+  polished_text: 'TalkWithYourAI',
   language: 'en',
   duration_ms: 1000,
   active_scene_id: null,
@@ -56,7 +56,7 @@ describe('History correction creation', () => {
     vi.clearAllMocks()
     vi.mocked(addCorrectionRule).mockResolvedValue(undefined)
     vi.mocked(getCorrectionRules).mockResolvedValue([
-      { id: 2, pattern: 'open type less', replacement: 'OpenTypeless', enabled: true },
+      { id: 2, pattern: 'open type less', replacement: 'TalkWithYourAI', enabled: true },
     ])
   })
 
@@ -76,12 +76,12 @@ describe('History correction creation', () => {
     const dialog = screen.getByRole('dialog', { name: 'history.createCorrection' })
     expect(dialog).toBeInTheDocument()
     expect(screen.getByLabelText('dictionary.wrongPhrase')).toHaveValue('open type less')
-    expect(screen.getByLabelText('dictionary.correctPhrase')).toHaveValue('OpenTypeless')
+    expect(screen.getByLabelText('dictionary.correctPhrase')).toHaveValue('TalkWithYourAI')
     expect(addCorrectionRule).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'history.saveCorrection' }))
     await waitFor(() => {
-      expect(addCorrectionRule).toHaveBeenCalledWith('open type less', 'OpenTypeless')
+      expect(addCorrectionRule).toHaveBeenCalledWith('open type less', 'TalkWithYourAI')
       expect(getCorrectionRules).toHaveBeenCalled()
       expect(useAppStore.getState().correctionRules).toHaveLength(1)
     })

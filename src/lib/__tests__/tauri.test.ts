@@ -136,18 +136,18 @@ describe('dictionary correction commands', () => {
   it('updates dictionary and correction rows through typed commands', async () => {
     vi.mocked(invoke).mockResolvedValue(undefined)
 
-    await updateDictionaryEntry(4, 'OpenTypeless', 'open typeless')
-    await updateCorrectionRule(7, 'open type less', 'OpenTypeless', false)
+    await updateDictionaryEntry(4, 'TalkWithYourAI', 'open typeless')
+    await updateCorrectionRule(7, 'open type less', 'TalkWithYourAI', false)
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'update_dictionary_entry', {
       id: 4,
-      word: 'OpenTypeless',
+      word: 'TalkWithYourAI',
       pronunciation: 'open typeless',
     })
     expect(invoke).toHaveBeenNthCalledWith(2, 'update_correction_rule', {
       id: 7,
       pattern: 'open type less',
-      replacement: 'OpenTypeless',
+      replacement: 'TalkWithYourAI',
       enabled: false,
     })
   })

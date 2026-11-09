@@ -56,19 +56,19 @@ beforeEach(() => {
 afterEach(cleanup)
 
 describe('LlmSetupStep', () => {
-  it('does not offer managed Cloud inside BYOK provider setup', () => {
+  it('does not offer a cloud provider inside provider setup', () => {
     render(<LlmSetupStep />)
 
     const providerSelect = screen.getAllByRole('combobox')[0]
     expect(providerSelect.querySelector('option[value="cloud"]')).toBeNull()
   })
 
-  it('moves a saved Cloud config to a valid BYOK provider instead of showing a dead selection', async () => {
+  it('moves an unknown saved provider to a valid BYOK provider instead of showing a dead selection', async () => {
     mockStore.config = {
-      llm_provider: 'cloud',
+      llm_provider: 'retired-provider',
       llm_api_key: '',
-      llm_base_url: 'https://www.opentypeless.com/api/proxy',
-      llm_model: 'default',
+      llm_base_url: 'https://example.invalid/v1',
+      llm_model: 'default-model',
     }
 
     render(<LlmSetupStep />)

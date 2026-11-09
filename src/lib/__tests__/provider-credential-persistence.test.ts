@@ -83,16 +83,6 @@ describe('provider key persistence across a settings save', () => {
     expect(saved.max_recording_seconds).toBe(600)
   })
 
-  it('keeps cloud login credentials out of provider key writes', async () => {
-    await saveOnboardingConfig({
-      ...staleConfig,
-      stt_provider: 'cloud',
-      llm_provider: 'cloud',
-      stt_custom_api_key: '',
-    })
-    expect(vault.size).toBe(0)
-  })
-
   it('does not carry an inactive regular STT key into a keyless custom endpoint', async () => {
     await saveOnboardingConfig({
       ...staleConfig,

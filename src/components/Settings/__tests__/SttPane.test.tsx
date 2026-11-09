@@ -12,7 +12,6 @@ vi.mock('react-i18next', () => ({
     t: (key: string, values?: Record<string, string | number>) => {
       const translations: Record<string, string> = {
         'settings.provider': 'Provider',
-        'nav.upgrade': 'Upgrade',
         'settings.apiKey': 'API Key',
         'settings.test': 'Test',
         'settings.enterApiKey': 'Enter API Key',
@@ -26,11 +25,7 @@ vi.mock('react-i18next', () => ({
         'recordingLimits.customDuration': 'Custom duration',
         'recordingLimits.allowedRange': 'Supported range: {{min}}–{{max}}.',
         'recordingLimits.allowedRangeWithReason': 'Range: {{min}}–{{max}}. {{reason}}',
-        'recordingLimits.allowedCloudRange':
-          'Range: {{min}}–{{max}}. Set by current Cloud capability.',
         'recordingLimits.corrected': 'This provider will use {{duration}}.',
-        'recordingLimits.currentSelectionWithCloudMax':
-          'Current: {{current}}. Cloud supports up to {{max}}.',
         'recordingLimits.currentSelectionWithLimit':
           'Selected: {{current}}; app limit: {{max}}. {{reason}}',
         'recordingLimits.providerFixedLimit': 'This provider allows recordings up to {{max}}.',
@@ -46,12 +41,6 @@ vi.mock('react-i18next', () => ({
         'recordingLimits.reasons.clientBuffer': 'Client buffer limit',
         'recordingLimits.reasons.unknownUpstream': 'Upstream limit unknown',
         'recordingLimits.reasons.unknownProvider': 'Provider limit unknown',
-        'recordingLimits.reasons.managedCapability': 'Set automatically for OpenTypeless Cloud.',
-        'recordingLimits.reasons.managedFallback': 'Safe Cloud fallback',
-        'settings.cloudSttPro': 'Cloud STT (Pro)',
-        'settings.sttSignInHint': 'Sign in to use cloud STT',
-        'settings.sttUpgradeHint': 'Upgrade to Pro to use cloud STT',
-        'settings.sttProActive': 'Cloud STT active',
         'settings.customSttPreset': 'Preset',
         'settings.customSttPresetSpeaches': 'Speaches',
         'settings.customSttPresetCustom': 'Custom OpenAI-compatible',
@@ -81,6 +70,7 @@ vi.mock('react-i18next', () => ({
         'providers.stt.aliyunQwen3Asr': 'Aliyun Qwen3 Realtime ASR',
         'providers.stt.volcengineDoubao': 'Volcengine Doubao Realtime ASR',
         'providers.stt.appleSpeech': 'Apple Speech (Local)',
+        'providers.stt.customWhisper': 'Custom Whisper',
       }
       return Object.entries(values ?? {}).reduce(
         (text, [name, value]) => text.replace(`{{${name}}}`, String(value)),
@@ -120,37 +110,12 @@ const mockAppStore = {
   },
 }
 
-const mockAuthStore = {
-  user: null as any,
-  plan: null as any,
-  source: 'free',
-  cloudWordsLimit: 0,
-  licenseStatus: null as any,
-}
-
 vi.mock('../../../stores/appStore', () => ({
   useAppStore: (selector: any) => {
     if (typeof selector === 'function') {
       return selector(mockAppStore)
     }
     return mockAppStore
-  },
-}))
-
-vi.mock('../../../stores/authStore', () => ({
-  hasManagedCloudAccess: (state: typeof mockAuthStore) =>
-    state.licenseStatus !== 'refunded' &&
-    state.licenseStatus !== 'deactivated' &&
-    ((state.source === 'creem' && state.cloudWordsLimit > 0) ||
-      (state.source === 'appsumo' &&
-        state.cloudWordsLimit > 0 &&
-        state.licenseStatus === 'active') ||
-      state.plan === 'pro'),
-  useAuthStore: (selector: any) => {
-    if (typeof selector === 'function') {
-      return selector(mockAuthStore)
-    }
-    return mockAuthStore
   },
 }))
 
@@ -180,12 +145,6 @@ describe('SttPane', () => {
       keyboardOutputReliable: true,
       clipboardAutoPasteReliable: true,
     }
-    mockAuthStore.user = null
-    mockAuthStore.plan = null
-    mockAuthStore.source = 'free'
-    mockAuthStore.cloudWordsLimit = 0
-    mockAuthStore.licenseStatus = null
-
     // Clear all mock function calls
     vi.clearAllMocks()
     vi.mocked(tauri.readCredential).mockResolvedValue(null)
@@ -420,20 +379,20 @@ describe('SttPane', () => {
       expect(screen.getByText('This provider will use 30 seconds.')).toBeInTheDocument()
     })
 
-    it('shows one selected duration and distinguishes it from the Cloud maximum', async () => {
-      mockAppStore.config.stt_provider = 'cloud'
+    it('shows the selected duration alongside the provider maximum', async () => {
+      mockAppStore.config.stt_provider = 'openai-whisper'
       mockAppStore.config.recording_limit_mode = 'custom'
       mockAppStore.config.custom_recording_limit_seconds = 30
       vi.mocked(tauri.getSttRecordingCapability).mockResolvedValueOnce({
         capability: {
           registryVersion: 1,
-          providerId: 'cloud',
-          transport: 'managedUpload',
+          providerId: 'openai-whisper',
+          transport: 'fileUpload',
           recommendedMaxSeconds: 600,
           hardMaxSeconds: 600,
-          maxUploadBytes: 4_000_000,
-          source: 'managedProduct',
-          explanationKey: 'recordingLimits.reasons.managedCapability',
+          maxUploadBytes: 24 * 1024 * 1024,
+          source: 'clientBuffer',
+          explanationKey: 'recordingLimits.reasons.clientBuffer',
         },
         mode: 'custom',
         requestedSeconds: 30,
@@ -447,22 +406,22 @@ describe('SttPane', () => {
       expect(screen.queryByLabelText('Recording limit presets')).not.toBeInTheDocument()
       expect(screen.queryByLabelText('Custom duration')).not.toBeInTheDocument()
       expect(
-        screen.getByText('Current: 30 seconds. Cloud supports up to 10 minutes.'),
+        screen.getByText('Selected: 30 seconds; app limit: 10 minutes. Client buffer limit'),
       ).toBeInTheDocument()
     })
 
     it('reveals a bounded numeric entry only after Custom duration is selected', async () => {
-      mockAppStore.config.stt_provider = 'cloud'
+      mockAppStore.config.stt_provider = 'openai-whisper'
       vi.mocked(tauri.getSttRecordingCapability).mockResolvedValueOnce({
         capability: {
           registryVersion: 1,
-          providerId: 'cloud',
-          transport: 'managedUpload',
+          providerId: 'openai-whisper',
+          transport: 'fileUpload',
           recommendedMaxSeconds: 600,
           hardMaxSeconds: 600,
-          maxUploadBytes: 4_000_000,
-          source: 'managedProduct',
-          explanationKey: 'recordingLimits.reasons.managedCapability',
+          maxUploadBytes: 24 * 1024 * 1024,
+          source: 'clientBuffer',
+          explanationKey: 'recordingLimits.reasons.clientBuffer',
         },
         mode: 'auto',
         requestedSeconds: 600,
@@ -481,10 +440,10 @@ describe('SttPane', () => {
       expect(input).toHaveAttribute('max', '600')
       expect(screen.getByText('seconds')).toBeInTheDocument()
       expect(
-        screen.getByText('Range: 30 seconds–10 minutes. Set by current Cloud capability.'),
+        screen.getByText('Range: 30 seconds–10 minutes. Client buffer limit'),
       ).toBeInTheDocument()
       expect(
-        screen.queryByText('Current: 10 minutes. Cloud supports up to 10 minutes.'),
+        screen.queryByText('Selected: 10 minutes; app limit: 10 minutes. Client buffer limit'),
       ).not.toBeInTheDocument()
       fireEvent.change(input, { target: { value: '300' } })
       expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
@@ -522,20 +481,20 @@ describe('SttPane', () => {
       ).not.toBeInTheDocument()
     })
 
-    it('keeps the managed fallback explanation and hides meaningless custom entry', async () => {
-      mockAppStore.config.stt_provider = 'cloud'
+    it('keeps a fixed provider cap and hides meaningless custom entry', async () => {
+      mockAppStore.config.stt_provider = 'openai-whisper'
       mockAppStore.config.recording_limit_mode = 'custom'
       mockAppStore.config.custom_recording_limit_seconds = 30
       vi.mocked(tauri.getSttRecordingCapability).mockResolvedValueOnce({
         capability: {
           registryVersion: 1,
-          providerId: 'cloud',
-          transport: 'managedUpload',
+          providerId: 'openai-whisper',
+          transport: 'fileUpload',
           recommendedMaxSeconds: 30,
           hardMaxSeconds: 30,
-          maxUploadBytes: 4_000_000,
-          source: 'managedProduct',
-          explanationKey: 'recordingLimits.reasons.managedFallback',
+          maxUploadBytes: 24 * 1024 * 1024,
+          source: 'provider',
+          explanationKey: 'recordingLimits.reasons.providerDuration',
         },
         mode: 'custom',
         requestedSeconds: 30,
@@ -548,9 +507,11 @@ describe('SttPane', () => {
       expect(
         within(duration).queryByRole('option', { name: 'Custom duration…' }),
       ).not.toBeInTheDocument()
-      expect(screen.getByText('Safe Cloud fallback')).toBeInTheDocument()
       expect(
-        screen.queryByText('Current: 30 seconds. Cloud supports up to 30 seconds.'),
+        screen.getByText('This provider allows recordings up to 30 seconds.'),
+      ).toBeInTheDocument()
+      expect(
+        screen.queryByText('Current: 30 seconds. This provider allows up to 30 seconds.'),
       ).not.toBeInTheDocument()
     })
 
@@ -566,18 +527,18 @@ describe('SttPane', () => {
       })
     })
 
-    it('shows 30 seconds for stale Cloud metadata and 10 minutes only for compatible v2', async () => {
-      mockAppStore.config.stt_provider = 'cloud'
+    it('shows 30 seconds for a provider with a small cap and 10 minutes for a larger one', async () => {
+      mockAppStore.config.stt_provider = 'openai-whisper'
       vi.mocked(tauri.getSttRecordingCapability).mockResolvedValueOnce({
         capability: {
           registryVersion: 1,
-          providerId: 'cloud',
-          transport: 'managedUpload',
+          providerId: 'openai-whisper',
+          transport: 'fileUpload',
           recommendedMaxSeconds: 30,
           hardMaxSeconds: 30,
-          maxUploadBytes: 4_000_000,
-          source: 'managedProduct',
-          explanationKey: 'recordingLimits.reasons.managedFallback',
+          maxUploadBytes: 24 * 1024 * 1024,
+          source: 'provider',
+          explanationKey: 'recordingLimits.reasons.providerDuration',
         },
         mode: 'auto',
         requestedSeconds: 30,
@@ -588,19 +549,19 @@ describe('SttPane', () => {
       expect(
         await screen.findByRole('option', { name: /Auto \(recommended,.*30 seconds/i }),
       ).toBeInTheDocument()
-      expect(screen.getByText('Safe Cloud fallback')).toBeInTheDocument()
+      expect(screen.getByText('Provider duration limit')).toBeInTheDocument()
 
       cleanup()
       vi.mocked(tauri.getSttRecordingCapability).mockResolvedValueOnce({
         capability: {
           registryVersion: 1,
-          providerId: 'cloud',
-          transport: 'managedUpload',
+          providerId: 'openai-whisper',
+          transport: 'fileUpload',
           recommendedMaxSeconds: 600,
           hardMaxSeconds: 600,
-          maxUploadBytes: 4_000_000,
-          source: 'managedProduct',
-          explanationKey: 'recordingLimits.reasons.managedCapability',
+          maxUploadBytes: 24 * 1024 * 1024,
+          source: 'provider',
+          explanationKey: 'recordingLimits.reasons.providerDuration',
         },
         mode: 'auto',
         requestedSeconds: 600,
@@ -611,43 +572,7 @@ describe('SttPane', () => {
       expect(
         await screen.findByRole('option', { name: /Auto \(recommended,.*10 minutes/i }),
       ).toBeInTheDocument()
-      expect(screen.getByText('Set automatically for OpenTypeless Cloud.')).toBeInTheDocument()
-    })
-  })
-
-  describe('Cloud provider UI', () => {
-    it('shows cloud info when provider is cloud and user not signed in', () => {
-      mockAppStore.config.stt_provider = 'cloud'
-      render(<SttPane />)
-      expect(screen.getByText('Sign in to use cloud STT')).toBeInTheDocument()
-    })
-
-    it('shows upgrade hint when user is signed in but not pro', () => {
-      mockAppStore.config.stt_provider = 'cloud'
-      mockAuthStore.user = { id: '1', email: 'test@example.com' }
-      mockAuthStore.plan = 'free'
-
-      render(<SttPane />)
-      expect(screen.getByText('Upgrade to Pro to use cloud STT')).toBeInTheDocument()
-      fireEvent.click(screen.getByRole('button', { name: 'Upgrade' }))
-      expect(window.location.hash).toBe('#/upgrade')
-    })
-
-    it('shows active status when user is pro', () => {
-      mockAppStore.config.stt_provider = 'cloud'
-      mockAuthStore.user = { id: '1', email: 'test@example.com' }
-      mockAuthStore.plan = 'pro'
-
-      render(<SttPane />)
-      expect(screen.getByText('Cloud STT active')).toBeInTheDocument()
-    })
-
-    it('hides API key input when provider is cloud', () => {
-      mockAppStore.config.stt_provider = 'cloud'
-
-      const { container } = render(<SttPane />)
-      const inputs = container.querySelectorAll('input[placeholder="Enter API Key"]')
-      expect(inputs.length).toBe(0)
+      expect(screen.getByText('Provider duration limit')).toBeInTheDocument()
     })
   })
 
@@ -844,6 +769,26 @@ describe('SttPane', () => {
         expect(tauri.setCredential).toHaveBeenCalledWith('stt', 'custom-whisper', 'custom-secret'),
       )
       expect(mockAppStore.updateConfig).not.toHaveBeenCalledWith({ stt_api_key: 'custom-secret' })
+    })
+
+    it('accepts plain http local and private endpoints for the transcription URL', () => {
+      render(<SttPane />)
+      const input = screen.getByDisplayValue('http://localhost:8000/v1')
+
+      fireEvent.change(input, { target: { value: 'http://192.168.1.25:9000/v1' } })
+
+      expect(mockAppStore.updateConfig).toHaveBeenCalledWith({
+        stt_custom_base_url: 'http://192.168.1.25:9000/v1',
+      })
+    })
+
+    it('lists the custom provider as an explicit OpenAI-compatible option', () => {
+      render(<SttPane />)
+      const providerSelect = screen.getAllByRole('combobox')[0]
+
+      const option = providerSelect.querySelector('option[value="custom-whisper"]')
+      expect(option).toBeInTheDocument()
+      expect(option?.textContent).toBe('Custom OpenAI-compatible')
     })
   })
 
