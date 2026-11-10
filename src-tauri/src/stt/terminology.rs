@@ -833,6 +833,335 @@ pub const TERMINOLOGY: &[TerminologyRule] = &[
         pattern: "retrieval augmented generation",
         canonical: "RAG",
     },
+    // Project the user asked for
+    TerminologyRule {
+        pattern: "echo bird",
+        canonical: "EchoBird",
+    },
+    TerminologyRule {
+        pattern: "echo bird cloud",
+        canonical: "EchoBird Cloud",
+    },
+    // Languages / runtimes not yet covered
+    TerminologyRule {
+        pattern: "hash corp",
+        canonical: "HashiCorp",
+    },
+    TerminologyRule {
+        pattern: "dot net core",
+        canonical: ".NET Core",
+    },
+    TerminologyRule {
+        pattern: "c sharp",
+        canonical: "C#",
+    },
+    TerminologyRule {
+        pattern: "c plus plus",
+        canonical: "C++",
+    },
+    TerminologyRule {
+        pattern: "objective c",
+        canonical: "Objective-C",
+    },
+    // Backend frameworks not yet covered
+    TerminologyRule {
+        pattern: "nest js",
+        canonical: "NestJS",
+    },
+    TerminologyRule {
+        pattern: "koa js",
+        canonical: "Koa",
+    },
+    TerminologyRule {
+        pattern: "hapi js",
+        canonical: "hapi",
+    },
+    TerminologyRule {
+        pattern: "gin framework",
+        canonical: "Gin",
+    },
+    TerminologyRule {
+        pattern: "echo framework",
+        canonical: "Echo",
+    },
+    TerminologyRule {
+        pattern: "fiber framework",
+        canonical: "Fiber",
+    },
+    TerminologyRule {
+        pattern: "ruby on rails",
+        canonical: "Ruby on Rails",
+    },
+    TerminologyRule {
+        pattern: "phoenix framework",
+        canonical: "Phoenix",
+    },
+    TerminologyRule {
+        pattern: "asp dot net",
+        canonical: "ASP.NET",
+    },
+    TerminologyRule {
+        pattern: "asp net",
+        canonical: "ASP.NET",
+    },
+    TerminologyRule {
+        pattern: "dot net m v c",
+        canonical: ".NET MVC",
+    },
+    TerminologyRule {
+        pattern: "spring web flux",
+        canonical: "Spring WebFlux",
+    },
+    TerminologyRule {
+        pattern: "spring gateway",
+        canonical: "Spring Cloud Gateway",
+    },
+    TerminologyRule {
+        pattern: "grpc gateway",
+        canonical: "gRPC Gateway",
+    },
+    TerminologyRule {
+        pattern: "open api",
+        canonical: "OpenAPI",
+    },
+    // Databases / ORMs not yet covered
+    TerminologyRule {
+        pattern: "sq l server",
+        canonical: "SQL Server",
+    },
+    TerminologyRule {
+        pattern: "s q l server",
+        canonical: "SQL Server",
+    },
+    TerminologyRule {
+        pattern: "oracle d b",
+        canonical: "Oracle DB",
+    },
+    TerminologyRule {
+        pattern: "dynamo d b",
+        canonical: "DynamoDB",
+    },
+    TerminologyRule {
+        pattern: "fire store",
+        canonical: "Firestore",
+    },
+    TerminologyRule {
+        pattern: "neon d b",
+        canonical: "Neon",
+    },
+    TerminologyRule {
+        pattern: "drizzle o r m",
+        canonical: "Drizzle ORM",
+    },
+    TerminologyRule {
+        pattern: "type o r m",
+        canonical: "TypeORM",
+    },
+    TerminologyRule {
+        pattern: "pg vector",
+        canonical: "pgvector",
+    },
+    // DevOps / CI not yet covered
+    TerminologyRule {
+        pattern: "git lab runner",
+        canonical: "GitLab Runner",
+    },
+    TerminologyRule {
+        pattern: "git hub runner",
+        canonical: "GitHub Runner",
+    },
+    TerminologyRule {
+        pattern: "argo workflow",
+        canonical: "Argo Workflows",
+    },
+    TerminologyRule {
+        pattern: "flux c d",
+        canonical: "Flux CD",
+    },
+    TerminologyRule {
+        pattern: "helm chart",
+        canonical: "Helm Chart",
+    },
+    TerminologyRule {
+        pattern: "istio gateway",
+        canonical: "Istio Gateway",
+    },
+    TerminologyRule {
+        pattern: "envoy proxy",
+        canonical: "Envoy",
+    },
+    TerminologyRule {
+        pattern: "open shift",
+        canonical: "OpenShift",
+    },
+    TerminologyRule {
+        pattern: "sonar qube",
+        canonical: "SonarQube",
+    },
+    TerminologyRule {
+        pattern: "pre commit",
+        canonical: "pre-commit",
+    },
+    // Messaging / workflow not yet covered
+    TerminologyRule {
+        pattern: "air flow",
+        canonical: "Airflow",
+    },
+    TerminologyRule {
+        pattern: "apache airflow",
+        canonical: "Airflow",
+    },
+    TerminologyRule {
+        pattern: "apache flink",
+        canonical: "Flink",
+    },
+    TerminologyRule {
+        pattern: "apache spark",
+        canonical: "Spark",
+    },
+    TerminologyRule {
+        pattern: "apache hive",
+        canonical: "Hive",
+    },
+    TerminologyRule {
+        pattern: "apache hadoop",
+        canonical: "Hadoop",
+    },
+    TerminologyRule {
+        pattern: "apache iceberg",
+        canonical: "Iceberg",
+    },
+    TerminologyRule {
+        pattern: "delta lake",
+        canonical: "Delta Lake",
+    },
+    TerminologyRule {
+        pattern: "apache doris",
+        canonical: "Doris",
+    },
+    TerminologyRule {
+        pattern: "star rocks",
+        canonical: "StarRocks",
+    },
+    TerminologyRule {
+        pattern: "apache druid",
+        canonical: "Druid",
+    },
+    // Mobile / desktop
+    TerminologyRule {
+        pattern: "react native",
+        canonical: "React Native",
+    },
+    TerminologyRule {
+        pattern: "swift ui",
+        canonical: "SwiftUI",
+    },
+    TerminologyRule {
+        pattern: "swift u i",
+        canonical: "SwiftUI",
+    },
+    TerminologyRule {
+        pattern: "jet pack compose",
+        canonical: "Jetpack Compose",
+    },
+    TerminologyRule {
+        pattern: "electron forge",
+        canonical: "Electron Forge",
+    },
+    TerminologyRule {
+        pattern: "tauri v two",
+        canonical: "Tauri v2",
+    },
+    TerminologyRule {
+        pattern: "uni app",
+        canonical: "uni-app",
+    },
+    // Testing / quality
+    TerminologyRule {
+        pattern: "play wright",
+        canonical: "Playwright",
+    },
+    TerminologyRule {
+        pattern: "play right",
+        canonical: "Playwright",
+    },
+    TerminologyRule {
+        pattern: "cy press",
+        canonical: "Cypress",
+    },
+    TerminologyRule {
+        pattern: "j unit",
+        canonical: "JUnit",
+    },
+    TerminologyRule {
+        pattern: "test n g",
+        canonical: "TestNG",
+    },
+    TerminologyRule {
+        pattern: "mock ito",
+        canonical: "Mockito",
+    },
+    TerminologyRule {
+        pattern: "py test",
+        canonical: "pytest",
+    },
+    TerminologyRule {
+        pattern: "pie test",
+        canonical: "pytest",
+    },
+    TerminologyRule {
+        pattern: "tokio test",
+        canonical: "tokio-test",
+    },
+    // Observability / security
+    TerminologyRule {
+        pattern: "open tracing",
+        canonical: "OpenTracing",
+    },
+    TerminologyRule {
+        pattern: "zip kin",
+        canonical: "Zipkin",
+    },
+    TerminologyRule {
+        pattern: "vector logs",
+        canonical: "Vector",
+    },
+    TerminologyRule {
+        pattern: "fluent bit",
+        canonical: "Fluent Bit",
+    },
+    TerminologyRule {
+        pattern: "fluent d",
+        canonical: "Fluentd",
+    },
+    TerminologyRule {
+        pattern: "vault secret",
+        canonical: "Vault",
+    },
+    TerminologyRule {
+        pattern: "key cloak",
+        canonical: "Keycloak",
+    },
+    TerminologyRule {
+        pattern: "auth zero",
+        canonical: "Auth0",
+    },
+    TerminologyRule {
+        pattern: "cas bin",
+        canonical: "Casbin",
+    },
+    TerminologyRule {
+        pattern: "o p a",
+        canonical: "OPA",
+    },
+    TerminologyRule {
+        pattern: "x five zero nine",
+        canonical: "X.509",
+    },
+    TerminologyRule {
+        pattern: "m t l s",
+        canonical: "mTLS",
+    },
 ];
 
 const MAX_DETERMINISTIC_CORRECTIONS: usize = 100;
@@ -1231,5 +1560,39 @@ mod tests {
                 "ordinary prose must stay untouched: {sentence}"
             );
         }
+    }
+    #[test]
+    fn echobird_is_recognised() {
+        assert_eq!(
+            apply_terminology("用 echo bird 做个网关"),
+            "用 EchoBird 做个网关"
+        );
+        assert_eq!(
+            apply_terminology("echo bird cloud 已经上线"),
+            "EchoBird Cloud 已经上线"
+        );
+    }
+
+    #[test]
+    fn newly_added_stack_terms_are_corrected() {
+        assert_eq!(apply_terminology("用 nest js 写服务"), "用 NestJS 写服务");
+        assert_eq!(apply_terminology("跑一下 j unit 测试"), "跑一下 JUnit 测试");
+        assert_eq!(
+            apply_terminology("用 play wright 做端到端"),
+            "用 Playwright 做端到端"
+        );
+        assert_eq!(
+            apply_terminology("开个 key cloak 实例"),
+            "开个 Keycloak 实例"
+        );
+        assert_eq!(
+            apply_terminology("用 react native 打包"),
+            "用 React Native 打包"
+        );
+        assert_eq!(
+            apply_terminology("看 apache spark 的任务"),
+            "看 Spark 的任务"
+        );
+        assert_eq!(apply_terminology("接 s q l server"), "接 SQL Server");
     }
 }
