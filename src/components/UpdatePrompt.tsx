@@ -1,27 +1,31 @@
 import { useEffect, useState } from 'react'
-import { Download, RefreshCw, X } from 'lucide-react'
-import { check, type Update } from '@tauri-apps/plugin-updater'
-import { relaunch } from '@tauri-apps/plugin-process'
+import { Download, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { checkForUpdate, type AvailableRelease } from '../lib/tauri'
+import { openUrl } from '@tauri-apps/plugin-opener'
 
-type InstallState = 'idle' | 'installing' | 'error'
-
+/**
+ * "A newer release exists" notice.
+ *
+ * This app does not self-update: macOS builds are ad-hoc signed and there is no
+ * maintainer signing key, so an auto-update payload could not be verified.
+ * The notice only tells the user a newer GitHub release exists and opens the
+ * release page; the user installs it themselves.
+ */
 export function UpdatePrompt() {
   const { t } = useTranslation()
-  const [update, setUpdate] = useState<Update | null>(null)
+  const [release, setRelease] = useState<AvailableRelease | null>(null)
   const [dismissed, setDismissed] = useState(false)
-  const [installState, setInstallState] = useState<InstallState>('idle')
 
   useEffect(() => {
     let cancelled = false
 
-    check()
-      .then((availableUpdate) => {
-        if (!cancelled && availableUpdate) {
-          setUpdate(availableUpdate)
-        }
+    checkForUpdate()
+      .then((available) => {
+        if (!cancelled && available) setRelease(available)
       })
       .catch((error) => {
+        // A failed check is never user-visible; offline is normal.
         console.warn('Failed to check for updates:', error)
       })
 
@@ -30,20 +34,7 @@ export function UpdatePrompt() {
     }
   }, [])
 
-  if (!update || dismissed) return null
-
-  const installUpdate = async () => {
-    setInstallState('installing')
-    try {
-      await update.downloadAndInstall()
-      await relaunch()
-    } catch (error) {
-      console.warn('Failed to install update:', error)
-      setInstallState('error')
-    }
-  }
-
-  const installing = installState === 'installing'
+  if (!release || dismissed) return null
 
   return (
     <div
@@ -62,9 +53,11 @@ export function UpdatePrompt() {
                 {t('updates.availableTitle', 'Update available')}
               </h2>
               <p className="mt-1 text-[12px] leading-5 text-text-secondary">
-                {t('updates.availableBody', 'Version {{version}} is ready to install.', {
-                  version: update.version,
-                })}
+                {t(
+                  'updates.availableBody',
+                  'Version {{version}} has been released. Download it from GitHub Releases.',
+                  { version: release.version },
+                )}
               </p>
             </div>
             <button
@@ -77,25 +70,17 @@ export function UpdatePrompt() {
             </button>
           </div>
 
-          {installState === 'error' && (
-            <p className="mt-3 text-[12px] leading-5 text-error">
-              {t(
-                'updates.error',
-                'Update failed. Please download the latest version from the website.',
-              )}
-            </p>
-          )}
-
           <button
             type="button"
-            onClick={installUpdate}
-            disabled={installing}
-            className="mt-3 inline-flex h-9 items-center justify-center gap-2 rounded-[7px] bg-accent px-3 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-70"
+            onClick={() => {
+              void openUrl(release.url).catch((error) => {
+                console.warn('Failed to open the release page:', error)
+              })
+            }}
+            className="mt-3 inline-flex h-9 items-center justify-center gap-2 rounded-[7px] bg-accent px-3 text-[13px] font-medium text-white transition-colors hover:bg-accent-hover"
           >
-            {installing ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
-            {installing
-              ? t('updates.installing', 'Installing...')
-              : t('updates.install', 'Install update')}
+            <Download size={14} />
+            {t('updates.openRelease', 'Open release page')}
           </button>
         </div>
       </div>

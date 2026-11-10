@@ -131,7 +131,7 @@ macOS 构建为 **ad-hoc 签名**，既不是 Developer ID 签名，也没有经
 xattr -dr com.apple.quarantine /Applications/TalkWithYourAI.app
 ```
 
-自动更新产物需要 minisign 密钥。在把 `TAURI_SIGNING_PRIVATE_KEY`（及 `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`）配置为仓库 secrets、**并且**用配套公钥替换 `src-tauri/tauri.conf.json` 里的 `pubkey` 之前，workflow 会以关闭 `createUpdaterArtifacts` 的方式构建，不发布更新签名。配置里现有的 `pubkey` 属于上游原作者，保留它意味着第三方可以签出本应用会接受的更新，因此首次公开发布前必须替换。
+**不提供签名自动更新。** macOS 构建为 ad-hoc 签名，本项目也没有维护者签名密钥，更新包无法被验证。应用改为查询公开的 GitHub Releases API，发现新版本后给出提示并链接到发布页，由你自己下载安装。应用不会自动下载或执行任何东西。
 
 ### Windows
 
@@ -256,7 +256,7 @@ flowchart TB
   Pipeline --> LLMs["LLM 服务商"]
   Pipeline --> Storage["SQLite 历史记录 + 词典"]
   Pipeline --> Output["键盘 / 剪贴板输出"]
-  Updater["自动更新"] --> UI
+  Updater["更新提示"] --> UI
 ```
 
 ```
@@ -284,7 +284,7 @@ src-tauri/src/        # Rust 后端
 - [ ] 更清晰的 Linux 桌面环境兼容说明
 - [ ] 更多工作流预设：写作、代码、客服回复等
 - [ ] 插件式服务商扩展
-- [ ] 本仓库的发版流水线（自动更新 endpoint 已指向本仓库，发版流程是后续任务）
+- [x] 本仓库的发版流水线（`.github/workflows/release.yml`，三平台）
 
 ## 常见问题
 

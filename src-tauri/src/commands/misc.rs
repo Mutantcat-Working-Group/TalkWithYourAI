@@ -885,6 +885,17 @@ pub fn open_accessibility_settings() -> bool {
     pipeline::open_accessibility_settings()
 }
 
+/// Report a newer GitHub release, if one exists. Notification only: the app
+/// never downloads or installs anything itself.
+#[tauri::command]
+pub async fn check_for_update(
+    client: tauri::State<'_, reqwest::Client>,
+) -> Result<Option<crate::update_check::AvailableRelease>, String> {
+    crate::update_check::check_latest_release(client.inner(), env!("CARGO_PKG_VERSION"))
+        .await
+        .map_err(|error| error.to_string())
+}
+
 #[tauri::command]
 pub fn get_platform_capabilities() -> platform::PlatformCapabilities {
     platform::capabilities()

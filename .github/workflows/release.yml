@@ -12,10 +12,10 @@ name: Release
 # (right-click -> Open). It does give the bundle a self-consistent signature,
 # which matters on Apple Silicon.
 #
-# Updater artifacts (createUpdaterArtifacts = true in tauri.conf.json) require
-# the minisign private key. Until TAURI_SIGNING_PRIVATE_KEY is set as a repo
-# secret, the build overrides createUpdaterArtifacts to false so it still
-# succeeds; the signature files and latest.json are then simply absent.
+# No signed auto-update: the macOS build is ad-hoc signed and there is no
+# maintainer signing key, so an update payload could never be verified. The app
+# asks the GitHub Releases API whether a newer version exists and points the
+# user at the release page; installing is left to the user.
 
 on:
   workflow_dispatch:
@@ -109,22 +109,9 @@ jobs:
         env:
           # Ad-hoc signing for macOS only; harmless/ignored on the other platforms.
           APPLE_SIGNING_IDENTITY: ${{ matrix.platform_group == 'macos' && '-' || '' }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           set -eu
-          # Build the --config arguments as an array so `--config` and its JSON
-          # value stay two separate argv entries. Storing them in a single quoted
-          # string makes tauri see one malformed argument.
-          updater_flag=(--config '{"bundle":{"createUpdaterArtifacts":false}}')
-          if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ] && [ -n "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}" ]; then
-            updater_flag=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
-          elif [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
-            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is set but the password is empty - building without updater artifacts (a protected key would fail signing at the end of the build)."
-          else
-            echo "::warning::TAURI_SIGNING_PRIVATE_KEY is not configured - building without updater artifacts."
-          fi
-          npx tauri build ${{ matrix.args }} "${updater_flag[@]}"
+          npx tauri build ${{ matrix.args }}
 
       # AppImage needs linuxdeploy, which comes from
       # github.com/tauri-apps/binary-releases and intermittently returns 504.
@@ -162,15 +149,9 @@ jobs:
         shell: bash
         env:
           XDG_CACHE_HOME: ${{ runner.temp }}/talkwithyourai-packaging-tools
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: |
           set -eu
-          # A .deb-only build is not updater-enabled, and enabling updater
-          # artifacts without an updater target makes tauri-bundler abort. So
-          # this AppImage run always leaves them off.
           npx tauri build --bundles appimage \
-            --config '{"bundle":{"createUpdaterArtifacts":false}}' \
             || echo "::warning::AppImage bundling failed; .deb is still published."
 
       # Tauri deletes the .app after sealing the .dmg, so verify the copy the
@@ -206,8 +187,7 @@ jobs:
           echo "--- bundle tree ---"
           find src-tauri/target -type f \
             \( -name '*.dmg' -o -name '*.exe' -o -name '*.msi' -o -name '*.AppImage' \
-               -o -name '*.deb' -o -name '*.rpm' -o -name '*.tar.gz' -o -name '*.sig' \
-               -o -name 'latest.json' \) \
+               -o -name '*.deb' -o -name '*.rpm' -o -name '*.tar.gz' \) \
             -not -path '*/deps/*' | sort
 
       # One checksum file per installer, carrying both MD5 and SHA-1 as required.
@@ -300,16 +280,6 @@ jobs:
           path: |
             src-tauri/target/release/bundle/appimage/*.AppImage
             checksums-out/*
-
-      - name: Upload updater signatures
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: ${{ matrix.artifact_name }}-updater
-          if-no-files-found: ignore
-          retention-days: 14
-          path: |
-            src-tauri/target/**/*.sig
-            src-tauri/target/**/latest.json
 
   publish:
     # Publish a GitHub Release when a v* tag was pushed, or a tag input was given.
@@ -410,8 +380,6 @@ jobs:
             dist/**/*.AppImage
             dist/**/*.deb
             dist/**/*.tar.gz
-            dist/**/*.sig
-            dist/**/latest.json
             dist/**/*.checksums.txt
             dist/MD5SUMS
             dist/SHA1SUMS

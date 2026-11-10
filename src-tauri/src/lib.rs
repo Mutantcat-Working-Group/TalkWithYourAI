@@ -18,6 +18,7 @@ pub mod storage;
 pub mod stt;
 pub mod stt_finalize;
 pub mod tray;
+pub mod update_check;
 pub mod voice_intent;
 mod window_state;
 
@@ -822,7 +823,6 @@ pub fn run() {
             None,
         ))
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_single_instance::init(|app, args, _cwd| {
             if let Some(action) = parse_cli_action(&args) {
@@ -1155,6 +1155,7 @@ pub fn run() {
             commands::misc::resume_hotkey,
             commands::misc::refresh_tray_labels,
             commands::misc::get_platform_capabilities,
+            commands::misc::check_for_update,
             commands::misc::get_hotkey_registration_error,
             commands::misc::get_hotkey_status,
             commands::misc::get_system_diagnostics,

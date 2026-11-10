@@ -597,11 +597,9 @@
   },
   "updates": {
     "availableTitle": "アップデートがあります",
-    "availableBody": "バージョン {{version}} をインストールできます。",
-    "install": "アップデートをインストール",
-    "installing": "インストール中...",
-    "dismiss": "閉じる",
-    "error": "アップデートに失敗しました。Web サイトから最新バージョンをダウンロードしてください。"
+    "availableBody": "{{version}} が公開されました。GitHub Releases からダウンロードしてください。",
+    "openRelease": "リリースページを開く",
+    "dismiss": "閉じる"
   },
   "common": {
     "save": "保存",

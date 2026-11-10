@@ -597,11 +597,9 @@
   },
   "updates": {
     "availableTitle": "Mise à jour disponible",
-    "availableBody": "La version {{version}} est prête à être installée.",
-    "install": "Installer la mise à jour",
-    "installing": "Installation...",
-    "dismiss": "Fermer",
-    "error": "La mise à jour a échoué. Téléchargez la dernière version depuis le site web."
+    "availableBody": "La version {{version}} est disponible. Téléchargez-la depuis GitHub Releases.",
+    "openRelease": "Ouvrir la page de publication",
+    "dismiss": "Ignorer"
   },
   "common": {
     "save": "Enregistrer",

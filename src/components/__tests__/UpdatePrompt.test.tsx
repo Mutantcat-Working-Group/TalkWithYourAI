@@ -2,17 +2,17 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { UpdatePrompt } from '../UpdatePrompt'
 
-const { mockCheck, mockRelaunch } = vi.hoisted(() => ({
-  mockCheck: vi.fn(),
-  mockRelaunch: vi.fn(),
+const { mockCheckForUpdate, mockOpenUrl } = vi.hoisted(() => ({
+  mockCheckForUpdate: vi.fn(),
+  mockOpenUrl: vi.fn(),
 }))
 
-vi.mock('@tauri-apps/plugin-updater', () => ({
-  check: mockCheck,
+vi.mock('../../lib/tauri', () => ({
+  checkForUpdate: mockCheckForUpdate,
 }))
 
-vi.mock('@tauri-apps/plugin-process', () => ({
-  relaunch: mockRelaunch,
+vi.mock('@tauri-apps/plugin-opener', () => ({
+  openUrl: mockOpenUrl,
 }))
 
 vi.mock('react-i18next', () => ({
@@ -27,11 +27,9 @@ vi.mock('react-i18next', () => ({
         (
           {
             'updates.availableTitle': 'Update available',
-            'updates.availableBody': `Version ${values?.version ?? ''} is ready to install.`,
-            'updates.install': 'Install update',
-            'updates.installing': 'Installing...',
+            'updates.availableBody': `Version ${values?.version ?? ''} has been released. Download it from GitHub Releases.`,
+            'updates.openRelease': 'Open release page',
             'updates.dismiss': 'Dismiss',
-            'updates.error': 'Update failed. Please download the latest version from the website.',
           } as Record<string, string>
         )[key] ?? key
       )
@@ -45,49 +43,72 @@ afterEach(() => {
 })
 
 describe('UpdatePrompt', () => {
-  it('stays hidden when no update is available', async () => {
-    mockCheck.mockResolvedValueOnce(null)
+  it('stays hidden when no newer release exists', async () => {
+    mockCheckForUpdate.mockResolvedValueOnce(null)
 
     render(<UpdatePrompt />)
 
-    await waitFor(() => expect(mockCheck).toHaveBeenCalled())
+    await waitFor(() => expect(mockCheckForUpdate).toHaveBeenCalled())
     expect(screen.queryByText('Update available')).not.toBeInTheDocument()
   })
 
-  it('shows an available update and relaunches after installing it', async () => {
-    const downloadAndInstall = vi.fn().mockResolvedValue(undefined)
-    mockCheck.mockResolvedValueOnce({
-      version: '0.1.42',
-      downloadAndInstall,
+  it('shows the release notice and opens the release page', async () => {
+    mockCheckForUpdate.mockResolvedValueOnce({
+      version: 'v1.0.20261118',
+      url: 'https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases/tag/v1.0.20261118',
     })
 
     render(<UpdatePrompt />)
 
     expect(await screen.findByText('Update available')).toBeInTheDocument()
-    expect(screen.getByText('Version 0.1.42 is ready to install.')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Version v1.0.20261118 has been released. Download it from GitHub Releases.',
+      ),
+    ).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Install update' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Open release page' }))
 
-    await waitFor(() => {
-      expect(downloadAndInstall).toHaveBeenCalled()
-      expect(mockRelaunch).toHaveBeenCalled()
-    })
+    await waitFor(() =>
+      expect(mockOpenUrl).toHaveBeenCalledWith(
+        'https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases/tag/v1.0.20261118',
+      ),
+    )
   })
 
-  it('shows a download fallback when install fails', async () => {
-    mockCheck.mockResolvedValueOnce({
-      version: '0.1.42',
-      downloadAndInstall: vi.fn().mockRejectedValue(new Error('network')),
+  it('never installs anything itself', async () => {
+    // The app must not offer a self-install action: the macOS build is ad-hoc
+    // signed, so an update payload could not be verified.
+    mockCheckForUpdate.mockResolvedValueOnce({
+      version: 'v1.0.20261118',
+      url: 'https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases/tag/v1.0.20261118',
     })
 
     render(<UpdatePrompt />)
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Install update' }))
+    await screen.findByText('Update available')
+    expect(screen.queryByRole('button', { name: /install/i })).not.toBeInTheDocument()
+  })
 
-    expect(
-      await screen.findByText(
-        'Update failed. Please download the latest version from the website.',
-      ),
-    ).toBeInTheDocument()
+  it('stays silent when the check fails', async () => {
+    mockCheckForUpdate.mockRejectedValueOnce(new Error('offline'))
+
+    render(<UpdatePrompt />)
+
+    await waitFor(() => expect(mockCheckForUpdate).toHaveBeenCalled())
+    expect(screen.queryByText('Update available')).not.toBeInTheDocument()
+  })
+
+  it('can be dismissed', async () => {
+    mockCheckForUpdate.mockResolvedValueOnce({
+      version: 'v1.0.20261118',
+      url: 'https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases/tag/v1.0.20261118',
+    })
+
+    render(<UpdatePrompt />)
+
+    await screen.findByText('Update available')
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    expect(screen.queryByText('Update available')).not.toBeInTheDocument()
   })
 })

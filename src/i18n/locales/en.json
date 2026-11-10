@@ -597,11 +597,9 @@
   },
   "updates": {
     "availableTitle": "Update available",
-    "availableBody": "Version {{version}} is ready to install.",
-    "install": "Install update",
-    "installing": "Installing...",
-    "dismiss": "Dismiss",
-    "error": "Update failed. Please download the latest version from the website."
+    "availableBody": "Version {{version}} has been released. Download it from GitHub Releases.",
+    "openRelease": "Open release page",
+    "dismiss": "Dismiss"
   },
   "common": {
     "save": "Save",

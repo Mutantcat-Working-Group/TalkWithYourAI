@@ -602,6 +602,20 @@ export async function setAutoStart(enabled: boolean): Promise<void> {
   return invoke('set_auto_start', { enabled })
 }
 
+// Update notification (no self-install; see components/UpdatePrompt.tsx)
+export type AvailableRelease = {
+  version: string
+  url: string
+}
+
+/**
+ * Asks the backend whether a newer GitHub release exists. Notification only:
+ * the app never downloads or installs an update itself.
+ */
+export async function checkForUpdate(): Promise<AvailableRelease | null> {
+  return invoke('check_for_update')
+}
+
 // macOS Accessibility permission
 export async function checkAccessibilityPermission(): Promise<boolean> {
   return invoke('check_accessibility_permission')

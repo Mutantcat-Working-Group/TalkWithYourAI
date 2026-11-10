@@ -597,11 +597,9 @@
   },
   "updates": {
     "availableTitle": "업데이트 사용 가능",
-    "availableBody": "버전 {{version}}을 설치할 수 있습니다.",
-    "install": "업데이트 설치",
-    "installing": "설치 중...",
-    "dismiss": "닫기",
-    "error": "업데이트에 실패했습니다. 웹사이트에서 최신 버전을 다운로드하세요."
+    "availableBody": "{{version}} 버전이 출시되었습니다. GitHub Releases에서 다운로드하세요.",
+    "openRelease": "릴리스 페이지 열기",
+    "dismiss": "닫기"
   },
   "common": {
     "save": "저장",

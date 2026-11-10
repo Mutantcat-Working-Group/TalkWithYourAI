@@ -127,7 +127,7 @@ Most desktop dictation tools stop at transcription. TalkWithYourAI adds the AI r
 | Dictionary        | Custom terms, import/export, and local correction rules for recurring transcription mistakes                                                 |
 | Scenes            | Built-in scenes, local custom scenes, active scene metadata, import/export for reusable writing styles                                      |
 | Privacy           | Local app detection and mappings, provider keys in the OS credential vault where available, no telemetry, no account                      |
-| Desktop polish    | Dark/light/system theme, onboarding, local history search, auto-start, auto-update, cross-platform Tauri app                                |
+| Desktop polish    | Dark/light/system theme, onboarding, local history search, auto-start, GitHub release notifications, cross-platform Tauri app                                |
 
 UI localization ships with complete English and Chinese copy, plus additional locale files that may still fall back to English for newer advanced features.
 
@@ -188,7 +188,7 @@ Release builds are produced by [`.github/workflows/release.yml`](.github/workflo
 
 macOS builds are **ad-hoc signed**, not Developer-ID signed and not notarized. Gatekeeper will still warn on first launch — right-click the app and choose **Open**, or run `xattr -dr com.apple.quarantine /Applications/TalkWithYourAI.app`.
 
-Auto-update artifacts require a minisign key. Until `TAURI_SIGNING_PRIVATE_KEY` (and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`) are configured as repository secrets **and** the `pubkey` in `src-tauri/tauri.conf.json` is replaced with the matching public key, the workflow builds with `createUpdaterArtifacts` disabled and no update signatures are published. The upstream `pubkey` still shipped in the config is the original author's; leaving it in place means third parties could sign updates that this app would accept, so replace it before your first public release.
+**There is no signed auto-update.** The macOS build is ad-hoc signed and this project has no maintainer signing key, so an update payload could never be verified. Instead the app asks the public GitHub Releases API whether a newer tag exists and shows a notice with a link to the release page; you download and install the new version yourself. Nothing is downloaded or executed automatically.
 
 ### Windows
 

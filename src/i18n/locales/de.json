@@ -597,11 +597,9 @@
   },
   "updates": {
     "availableTitle": "Aktualisierung verfügbar",
-    "availableBody": "Version {{version}} kann installiert werden.",
-    "install": "Update installieren",
-    "installing": "Wird installiert...",
-    "dismiss": "Schließen",
-    "error": "Update fehlgeschlagen. Bitte lade die neueste Version von der Website herunter."
+    "availableBody": "Version {{version}} wurde veröffentlicht. Laden Sie sie von GitHub Releases herunter.",
+    "openRelease": "Release-Seite öffnen",
+    "dismiss": "Ausblenden"
   },
   "common": {
     "save": "Speichern",

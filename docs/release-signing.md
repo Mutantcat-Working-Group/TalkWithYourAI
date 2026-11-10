@@ -25,10 +25,6 @@ macOS:
 - `APPLE_TEAM_ID`
 - `APPLE_EXPECTED_SIGNER_SHA256`: lowercase SHA-256 digest of the leaf Developer ID Application certificate
 
-Tauri updater:
-
-- `TAURI_SIGNING_PRIVATE_KEY`
-- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 
 Linux:
 
@@ -78,36 +74,35 @@ and the final asset gate. Test-signed or invalidly signed installers are never
 accepted as unsigned. Unsigned installers may show Windows SmartScreen or
 Unknown Publisher warnings.
 
-## Tauri Updater Key
+## Update Notifications (no signed auto-update)
 
-The updater plugin is enabled with `createUpdaterArtifacts: true`, so every
-build produces signed update artifacts. The public key in
-`src-tauri/tauri.conf.json` must belong to a key pair generated for this
-project.
+This project does **not** ship a signed auto-updater. Two reasons:
 
-**Do not ship a build with the upstream project's updater public key.** A
-signature produced by the upstream private key would pass verification in this
-app, which means a third party could publish an update that this application
-accepts as genuine.
+- macOS builds are ad-hoc signed and not notarized, so there is no stable
+  code identity to bind an update to.
+- There is no maintainer signing key, so an update payload could not be
+  verified as genuine.
 
-Generate a fresh key pair and store the private half in CI secrets:
+The updater plugin, its capability, `createUpdaterArtifacts`, and the
+`plugins.updater` block (including the inherited upstream `pubkey`) have all
+been removed. No `TAURI_SIGNING_PRIVATE_KEY` secret is needed.
 
-```bash
-npx tauri signer generate -w ~/.tauri/talkwithyourai.key
-```
-
-Put the printed public key into `updater.pubkey` in
-`src-tauri/tauri.conf.json`, and store `TAURI_SIGNING_PRIVATE_KEY` (the
-private key contents) and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` as secrets on
-this repository. Until this is done, update checks fail signature
-verification and fail silently with a warning; the app keeps working but no
-update can be installed.
-
-The updater `endpoints` value must point at this repository:
+Instead, the app calls the public GitHub Releases API and shows a notice when a
+newer tag exists:
 
 ```
-https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases/latest/download/latest.json
+https://api.github.com/repos/Mutantcat-Working-Group/TalkWithYourAI/releases/latest
 ```
+
+The notice links to the release page (`html_url`) and the user installs the
+new version themselves. Nothing is downloaded or executed automatically.
+
+Implementation: `src-tauri/src/update_check.rs` (version comparison + API
+call) and `src/components/UpdatePrompt.tsx` (notice UI).
+
+If a signed auto-updater is ever wanted, it requires a real Developer ID
+certificate plus notarization first; only then does a minisign key pair make
+sense.
 
 Release downloads redirect to `objects.githubusercontent.com`, so the CSP in
 `src-tauri/tauri.conf.json` must allow that domain as well.

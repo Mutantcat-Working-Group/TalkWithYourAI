@@ -597,11 +597,9 @@
   },
   "updates": {
     "availableTitle": "Actualización disponible",
-    "availableBody": "La versión {{version}} está lista para instalarse.",
-    "install": "Instalar actualización",
-    "installing": "Instalando...",
-    "dismiss": "Descartar",
-    "error": "La actualización falló. Descarga la última versión desde el sitio web."
+    "availableBody": "La versión {{version}} ya está disponible. Descárgala desde GitHub Releases.",
+    "openRelease": "Abrir la página de la versión",
+    "dismiss": "Descartar"
   },
   "common": {
     "save": "Guardar",
