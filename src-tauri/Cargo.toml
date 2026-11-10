@@ -1,6 +1,6 @@
 [package]
 name = "talkwithyourai"
-version = "1.0.20261115"
+version = "1.0.20261116"
 description = "AI-powered speech-to-text and text polishing desktop app"
 authors = ["TalkWithYourAI Contributors"]
 license = "MIT"
