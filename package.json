@@ -1,7 +1,7 @@
 {
   "name": "talkwithyourai",
   "private": true,
-  "version": "1.0.20261116",
+  "version": "1.0.20261117",
   "type": "module",
   "description": "AI-powered speech-to-text and text polishing desktop app",
   "keywords": [

@@ -180,7 +180,7 @@ Download the latest version for your platform:
 | macOS    | Universal `.dmg` for Apple Silicon and Intel |
 | Linux    | `.AppImage` / `.deb`                         |
 
-Release versions use a date-based scheme: `1.0.YYYYMMDD` (for example `1.0.20261116`).
+Release versions use a date-based scheme: `1.0.YYYYMMDD` (for example `1.0.20261117`).
 
 ## Installation Notes
 
@@ -218,14 +218,14 @@ Then open the app normally.
 **Ubuntu/Debian** — install the `.deb` package:
 
 ```bash
-sudo apt install ./TalkWithYourAI_1.0.20261116_amd64.deb
+sudo apt install ./TalkWithYourAI_1.0.20261117_amd64.deb
 ```
 
 **AppImage** — make it executable and run:
 
 ```bash
-chmod +x TalkWithYourAI_1.0.20261116_amd64.AppImage
-./TalkWithYourAI_1.0.20261116_amd64.AppImage
+chmod +x TalkWithYourAI_1.0.20261117_amd64.AppImage
+./TalkWithYourAI_1.0.20261117_amd64.AppImage
 ```
 
 **NVIDIA + Wayland users:** The app auto-detects this configuration and applies a workaround. If it still crashes on startup, run:
