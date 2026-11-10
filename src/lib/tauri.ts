@@ -611,6 +611,14 @@ export async function requestAccessibilityPermission(): Promise<boolean> {
   return invoke('request_accessibility_permission')
 }
 
+/**
+ * Opens Privacy > Accessibility directly. Kept separate from the request call
+ * so asking for permission shows a single system dialog instead of two.
+ */
+export async function openAccessibilitySettings(): Promise<boolean> {
+  return invoke('open_accessibility_settings')
+}
+
 export async function waitForAccessibilityPermission({
   timeoutMs = 60_000,
   intervalMs = 1_000,

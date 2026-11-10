@@ -396,7 +396,8 @@
     "mappingResetConfirm": "删除所有仅保存在本机的应用映射？",
     "mappingResetConfirmAction": "重置映射",
     "mappingNoMappings": "暂无自定义应用映射",
-    "dictationMode": "听写触发方式"
+    "dictationMode": "听写触发方式",
+    "openSystemSettings": "打开设置"
   },
   "contextFamilies": {
     "email": "邮件",

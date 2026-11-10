@@ -54,6 +54,7 @@ vi.mock('../../../stores/appStore', () => ({
 vi.mock('../../../lib/tauri', () => ({
   checkAccessibilityPermission: vi.fn().mockResolvedValue(false),
   requestAccessibilityPermission: vi.fn().mockResolvedValue(true),
+  openAccessibilitySettings: vi.fn().mockResolvedValue(true),
   waitForAccessibilityPermission: vi.fn().mockResolvedValue(true),
   resumeHotkey: vi.fn().mockResolvedValue(undefined),
   requestBrowserAccess: vi.fn().mockResolvedValue('available'),

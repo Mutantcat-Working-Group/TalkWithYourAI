@@ -396,7 +396,8 @@
     "mappingResetConfirm": "Удалить все сопоставления приложений, сохранённые только на этом устройстве?",
     "mappingResetConfirmAction": "Сбросить сопоставления",
     "mappingNoMappings": "Нет пользовательских сопоставлений приложений",
-    "dictationMode": "Режим диктовки"
+    "dictationMode": "Режим диктовки",
+    "openSystemSettings": "Открыть настройки"
   },
   "contextFamilies": {
     "email": "Электронная почта",

@@ -396,7 +396,8 @@
     "mappingResetConfirm": "Delete all device-only app mappings?",
     "mappingResetConfirmAction": "Reset mappings",
     "mappingNoMappings": "No custom app mappings",
-    "dictationMode": "Dictation mode"
+    "dictationMode": "Dictation mode",
+    "openSystemSettings": "Open Settings"
   },
   "contextFamilies": {
     "email": "Email",

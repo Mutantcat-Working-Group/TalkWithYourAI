@@ -1117,6 +1117,7 @@ pub fn run() {
             show_ask_window,
             commands::misc::check_accessibility_permission,
             commands::misc::request_accessibility_permission,
+            commands::misc::open_accessibility_settings,
             commands::misc::request_browser_access,
             commands::config::get_config,
             commands::config::update_config,

@@ -396,7 +396,8 @@
     "mappingResetConfirm": "Eliminare tutte le associazioni delle app salvate solo su questo dispositivo?",
     "mappingResetConfirmAction": "Reimposta associazioni",
     "mappingNoMappings": "Nessuna associazione personalizzata delle app",
-    "dictationMode": "Modalita dettatura"
+    "dictationMode": "Modalita dettatura",
+    "openSystemSettings": "Apri Impostazioni"
   },
   "contextFamilies": {
     "email": "Email",

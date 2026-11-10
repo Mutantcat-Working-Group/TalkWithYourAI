@@ -37,7 +37,15 @@ pub fn is_accessibility_trusted() -> bool {
     }
 }
 
-/// On macOS, request Accessibility permission and open the system Privacy pane.
+/// On macOS, request Accessibility permission.
+///
+/// `AXIsProcessTrustedWithOptions` with the prompt option already shows the
+/// system consent dialog AND registers the app in the Privacy > Accessibility
+/// list, and that dialog's own "Open System Settings" button takes the user to
+/// the right pane. Launching `open x-apple.systempreferences:...` as well made
+/// the app interrupt the user twice for the same permission, so this function
+/// only ever triggers the single system prompt.
+///
 /// Returns true if permission is already granted or on non-macOS platforms.
 pub fn request_accessibility_permission() -> bool {
     #[cfg(target_os = "macos")]
@@ -45,17 +53,7 @@ pub fn request_accessibility_permission() -> bool {
         if is_accessibility_trusted() {
             return true;
         }
-
-        let trusted_after_prompt = request_accessibility_permission_prompt();
-
-        if let Err(e) = std::process::Command::new("/usr/bin/open")
-            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
-            .spawn()
-        {
-            tracing::warn!("Failed to open macOS Accessibility settings: {}", e);
-        }
-
-        trusted_after_prompt
+        request_accessibility_permission_prompt()
     }
     #[cfg(not(target_os = "macos"))]
     {
@@ -112,6 +110,31 @@ fn request_accessibility_permission_prompt() -> bool {
         let trusted = AXIsProcessTrustedWithOptions(options) != 0;
         CFRelease(options);
         trusted
+    }
+}
+
+/// Open the macOS Privacy > Accessibility pane.
+///
+/// Only called when the user explicitly asks for it (for example the banner's
+/// "Open Settings" action). It is deliberately NOT part of
+/// `request_accessibility_permission`, which must stay a single system prompt.
+pub fn open_accessibility_settings() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        match std::process::Command::new("/usr/bin/open")
+            .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+            .spawn()
+        {
+            Ok(_) => true,
+            Err(e) => {
+                tracing::warn!("Failed to open macOS Accessibility settings: {}", e);
+                false
+            }
+        }
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        false
     }
 }
 

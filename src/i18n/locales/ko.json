@@ -396,7 +396,8 @@
     "mappingResetConfirm": "이 기기에만 저장된 모든 앱 연결 설정을 삭제할까요?",
     "mappingResetConfirmAction": "연결 설정 재설정",
     "mappingNoMappings": "사용자 지정 앱 연결 설정이 없습니다",
-    "dictationMode": "받아쓰기 모드"
+    "dictationMode": "받아쓰기 모드",
+    "openSystemSettings": "설정 열기"
   },
   "contextFamilies": {
     "email": "이메일",

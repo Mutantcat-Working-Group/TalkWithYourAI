@@ -878,6 +878,13 @@ pub fn request_accessibility_permission() -> bool {
     pipeline::request_accessibility_permission()
 }
 
+/// Opens Privacy > Accessibility. Separate from the request command so asking
+/// for permission shows exactly one system dialog.
+#[tauri::command]
+pub fn open_accessibility_settings() -> bool {
+    pipeline::open_accessibility_settings()
+}
+
 #[tauri::command]
 pub fn get_platform_capabilities() -> platform::PlatformCapabilities {
     platform::capabilities()

@@ -6,6 +6,7 @@ import { useAppStore } from '../../stores/appStore'
 import { needsMacAccessibility } from '../../lib/accessibility'
 import {
   checkAccessibilityPermission,
+  openAccessibilitySettings,
   requestAccessibilityPermission,
   requestBrowserAccess,
   resumeHotkey,
@@ -102,6 +103,15 @@ export function AccessibilityBanner() {
                 ? `${t('settings.accessibilityRequired')} - ${t('settings.accessibilityPermission')}`
                 : t('settings.browserAccessHint')}
             </span>
+            {showAccessibility && (
+              <button
+                type="button"
+                onClick={() => void openAccessibilitySettings()}
+                className="px-2.5 py-1 text-[11px] font-medium text-text-secondary bg-transparent rounded-full border border-border cursor-pointer hover:bg-bg-hover transition-colors shrink-0"
+              >
+                {t('settings.openSystemSettings')}
+              </button>
+            )}
             <button
               onClick={showAccessibility ? handleGrant : handleBrowserGrant}
               disabled={requestingBrowserAccess}
