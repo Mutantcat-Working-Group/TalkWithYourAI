@@ -241,11 +241,15 @@ mod context_prompt_contract_tests {
     #[test]
     fn thought_aware_policy_preserves_uncertain_and_intentional_content() {
         let prompt = prompt_for(&context(ContextFamily::General, None));
-        assert!(prompt.contains("intentional repetition"));
-        assert!(prompt.contains("explicit correction"));
+        // The invariants must survive the stronger filler-removal policy.
+        assert!(prompt.contains("emphasis"));
+        assert!(prompt.contains("self-correction"));
         assert!(prompt.contains("keep the original order"));
         assert!(prompt.contains("uncertain names"));
         assert!(prompt.contains("Do not search"));
+        // ...and the stronger policy itself must be present.
+        assert!(prompt.contains("DELETE hesitation"));
+        assert!(prompt.contains("呃"));
     }
 
     #[test]
