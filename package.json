@@ -22,6 +22,9 @@
   },
   "author": "TalkWithYourAI Contributors",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
