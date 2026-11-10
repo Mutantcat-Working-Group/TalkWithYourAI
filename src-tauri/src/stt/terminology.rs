@@ -311,6 +311,528 @@ pub const TERMINOLOGY: &[TerminologyRule] = &[
         pattern: "u r l",
         canonical: "URL",
     },
+    // Object storage / data infrastructure
+    TerminologyRule {
+        pattern: "rust f s",
+        canonical: "RustFS",
+    },
+    TerminologyRule {
+        pattern: "min io",
+        canonical: "MinIO",
+    },
+    TerminologyRule {
+        pattern: "mini o",
+        canonical: "MinIO",
+    },
+    TerminologyRule {
+        pattern: "min i o",
+        canonical: "MinIO",
+    },
+    TerminologyRule {
+        pattern: "sea weed f s",
+        canonical: "SeaweedFS",
+    },
+    TerminologyRule {
+        pattern: "elastic search",
+        canonical: "Elasticsearch",
+    },
+    TerminologyRule {
+        pattern: "open search",
+        canonical: "OpenSearch",
+    },
+    TerminologyRule {
+        pattern: "click house",
+        canonical: "ClickHouse",
+    },
+    TerminologyRule {
+        pattern: "in flux d b",
+        canonical: "InfluxDB",
+    },
+    TerminologyRule {
+        pattern: "cockroach d b",
+        canonical: "CockroachDB",
+    },
+    TerminologyRule {
+        pattern: "mongo d b",
+        canonical: "MongoDB",
+    },
+    TerminologyRule {
+        pattern: "my s q l",
+        canonical: "MySQL",
+    },
+    TerminologyRule {
+        pattern: "maria d b",
+        canonical: "MariaDB",
+    },
+    TerminologyRule {
+        pattern: "key d b",
+        canonical: "KeyDB",
+    },
+    TerminologyRule {
+        pattern: "zoo keeper",
+        canonical: "ZooKeeper",
+    },
+    TerminologyRule {
+        pattern: "apache kafka",
+        canonical: "Kafka",
+    },
+    TerminologyRule {
+        pattern: "rabbit m q",
+        canonical: "RabbitMQ",
+    },
+    // Java / Spring ecosystem
+    TerminologyRule {
+        pattern: "spring boot",
+        canonical: "Spring Boot",
+    },
+    TerminologyRule {
+        pattern: "spring boot three",
+        canonical: "Spring Boot 3",
+    },
+    TerminologyRule {
+        pattern: "spring cloud",
+        canonical: "Spring Cloud",
+    },
+    TerminologyRule {
+        pattern: "spring m v c",
+        canonical: "Spring MVC",
+    },
+    TerminologyRule {
+        pattern: "spring data",
+        canonical: "Spring Data",
+    },
+    TerminologyRule {
+        pattern: "spring security",
+        canonical: "Spring Security",
+    },
+    TerminologyRule {
+        pattern: "spring ai",
+        canonical: "Spring AI",
+    },
+    TerminologyRule {
+        pattern: "spring batch",
+        canonical: "Spring Batch",
+    },
+    TerminologyRule {
+        pattern: "my batis",
+        canonical: "MyBatis",
+    },
+    TerminologyRule {
+        pattern: "my batis plus",
+        canonical: "MyBatis-Plus",
+    },
+    TerminologyRule {
+        pattern: "j p a",
+        canonical: "JPA",
+    },
+    TerminologyRule {
+        pattern: "j d b c",
+        canonical: "JDBC",
+    },
+    TerminologyRule {
+        pattern: "tom cat",
+        canonical: "Tomcat",
+    },
+    TerminologyRule {
+        pattern: "under tow",
+        canonical: "Undertow",
+    },
+    TerminologyRule {
+        pattern: "vert x",
+        canonical: "Vert.x",
+    },
+    TerminologyRule {
+        pattern: "apache dubbo",
+        canonical: "Dubbo",
+    },
+    TerminologyRule {
+        pattern: "g u a v a",
+        canonical: "Guava",
+    },
+    TerminologyRule {
+        pattern: "j d k",
+        canonical: "JDK",
+    },
+    TerminologyRule {
+        pattern: "j v m",
+        canonical: "JVM",
+    },
+    TerminologyRule {
+        pattern: "j r e",
+        canonical: "JRE",
+    },
+    TerminologyRule {
+        pattern: "hang zhou",
+        canonical: "Hangzhou",
+    },
+    // Rust ecosystem
+    TerminologyRule {
+        pattern: "rust analyzers",
+        canonical: "rust-analyzer",
+    },
+    TerminologyRule {
+        pattern: "rust analyzer",
+        canonical: "rust-analyzer",
+    },
+    TerminologyRule {
+        pattern: "sea orm",
+        canonical: "SeaORM",
+    },
+    TerminologyRule {
+        pattern: "sql x",
+        canonical: "SQLx",
+    },
+    TerminologyRule {
+        pattern: "cross beam",
+        canonical: "crossbeam",
+    },
+    TerminologyRule {
+        pattern: "ray on",
+        canonical: "Rayon",
+    },
+    TerminologyRule {
+        pattern: "web assembly",
+        canonical: "WebAssembly",
+    },
+    // Python ecosystem
+    TerminologyRule {
+        pattern: "fast a p i",
+        canonical: "FastAPI",
+    },
+    TerminologyRule {
+        pattern: "fast api",
+        canonical: "FastAPI",
+    },
+    TerminologyRule {
+        pattern: "num py",
+        canonical: "NumPy",
+    },
+    TerminologyRule {
+        pattern: "py torch",
+        canonical: "PyTorch",
+    },
+    TerminologyRule {
+        pattern: "pie torch",
+        canonical: "PyTorch",
+    },
+    TerminologyRule {
+        pattern: "tensor flow",
+        canonical: "TensorFlow",
+    },
+    TerminologyRule {
+        pattern: "scikit learn",
+        canonical: "scikit-learn",
+    },
+    TerminologyRule {
+        pattern: "pie venv",
+        canonical: "pipenv",
+    },
+    TerminologyRule {
+        pattern: "con da",
+        canonical: "Conda",
+    },
+    TerminologyRule {
+        pattern: "py charm",
+        canonical: "PyCharm",
+    },
+    // Frontend / Node ecosystem
+    TerminologyRule {
+        pattern: "re act",
+        canonical: "React",
+    },
+    TerminologyRule {
+        pattern: "react js",
+        canonical: "React",
+    },
+    TerminologyRule {
+        pattern: "vue js",
+        canonical: "Vue",
+    },
+    TerminologyRule {
+        pattern: "vue three",
+        canonical: "Vue 3",
+    },
+    TerminologyRule {
+        pattern: "nuxt js",
+        canonical: "Nuxt",
+    },
+    TerminologyRule {
+        pattern: "svelte kit",
+        canonical: "SvelteKit",
+    },
+    TerminologyRule {
+        pattern: "solid js",
+        canonical: "SolidJS",
+    },
+    TerminologyRule {
+        pattern: "type graph q l",
+        canonical: "GraphQL",
+    },
+    TerminologyRule {
+        pattern: "graph q l",
+        canonical: "GraphQL",
+    },
+    TerminologyRule {
+        pattern: "react query",
+        canonical: "React Query",
+    },
+    TerminologyRule {
+        pattern: "tail wind c s s",
+        canonical: "Tailwind CSS",
+    },
+    TerminologyRule {
+        pattern: "tailwind c s s",
+        canonical: "Tailwind CSS",
+    },
+    TerminologyRule {
+        pattern: "post c s s",
+        canonical: "PostCSS",
+    },
+    TerminologyRule {
+        pattern: "es build",
+        canonical: "esbuild",
+    },
+    TerminologyRule {
+        pattern: "roll up",
+        canonical: "Rollup",
+    },
+    TerminologyRule {
+        pattern: "web pack",
+        canonical: "webpack",
+    },
+    TerminologyRule {
+        pattern: "turbo pack",
+        canonical: "Turbopack",
+    },
+    TerminologyRule {
+        pattern: "par cel",
+        canonical: "Parcel",
+    },
+    TerminologyRule {
+        pattern: "tori",
+        canonical: "Tauri",
+    },
+    TerminologyRule {
+        pattern: "tauri",
+        canonical: "Tauri",
+    },
+    // Cloud / DevOps / infra tooling
+    TerminologyRule {
+        pattern: "docker compose",
+        canonical: "Docker Compose",
+    },
+    TerminologyRule {
+        pattern: "docker file",
+        canonical: "Dockerfile",
+    },
+    TerminologyRule {
+        pattern: "pod man",
+        canonical: "Podman",
+    },
+    TerminologyRule {
+        pattern: "kube cuddle",
+        canonical: "kubectl",
+    },
+    TerminologyRule {
+        pattern: "argo c d",
+        canonical: "Argo CD",
+    },
+    TerminologyRule {
+        pattern: "terra form",
+        canonical: "Terraform",
+    },
+    TerminologyRule {
+        pattern: "git lab c i",
+        canonical: "GitLab CI",
+    },
+    TerminologyRule {
+        pattern: "git hub actions",
+        canonical: "GitHub Actions",
+    },
+    TerminologyRule {
+        pattern: "engin x",
+        canonical: "Nginx",
+    },
+    TerminologyRule {
+        pattern: "cloud flare",
+        canonical: "Cloudflare",
+    },
+    TerminologyRule {
+        pattern: "ver cel",
+        canonical: "Vercel",
+    },
+    TerminologyRule {
+        pattern: "supa base",
+        canonical: "Supabase",
+    },
+    TerminologyRule {
+        pattern: "fire base",
+        canonical: "Firebase",
+    },
+    TerminologyRule {
+        pattern: "s three",
+        canonical: "S3",
+    },
+    TerminologyRule {
+        pattern: "ec two",
+        canonical: "EC2",
+    },
+    TerminologyRule {
+        pattern: "cloud run",
+        canonical: "Cloud Run",
+    },
+    TerminologyRule {
+        pattern: "open telemetry",
+        canonical: "OpenTelemetry",
+    },
+    // Networking / protocols
+    TerminologyRule {
+        pattern: "g r p c",
+        canonical: "gRPC",
+    },
+    TerminologyRule {
+        pattern: "web socket",
+        canonical: "WebSocket",
+    },
+    TerminologyRule {
+        pattern: "web sockets",
+        canonical: "WebSocket",
+    },
+    TerminologyRule {
+        pattern: "rest api",
+        canonical: "REST API",
+    },
+    TerminologyRule {
+        pattern: "rest full",
+        canonical: "RESTful",
+    },
+    TerminologyRule {
+        pattern: "o auth",
+        canonical: "OAuth",
+    },
+    TerminologyRule {
+        pattern: "open id connect",
+        canonical: "OpenID Connect",
+    },
+    TerminologyRule {
+        pattern: "j w t",
+        canonical: "JWT",
+    },
+    TerminologyRule {
+        pattern: "s s o",
+        canonical: "SSO",
+    },
+    TerminologyRule {
+        pattern: "s a m l",
+        canonical: "SAML",
+    },
+    TerminologyRule {
+        pattern: "c o r s",
+        canonical: "CORS",
+    },
+    TerminologyRule {
+        pattern: "s s e",
+        canonical: "SSE",
+    },
+    TerminologyRule {
+        pattern: "t c p",
+        canonical: "TCP",
+    },
+    TerminologyRule {
+        pattern: "u d p",
+        canonical: "UDP",
+    },
+    TerminologyRule {
+        pattern: "d n s",
+        canonical: "DNS",
+    },
+    TerminologyRule {
+        pattern: "h t t p two",
+        canonical: "HTTP/2",
+    },
+    TerminologyRule {
+        pattern: "h t t p three",
+        canonical: "HTTP/3",
+    },
+    // AI / ML
+    TerminologyRule {
+        pattern: "large language model",
+        canonical: "LLM",
+    },
+    TerminologyRule {
+        pattern: "lang chain",
+        canonical: "LangChain",
+    },
+    TerminologyRule {
+        pattern: "llama index",
+        canonical: "LlamaIndex",
+    },
+    TerminologyRule {
+        pattern: "hugging face",
+        canonical: "Hugging Face",
+    },
+    TerminologyRule {
+        pattern: "q wen",
+        canonical: "Qwen",
+    },
+    TerminologyRule {
+        pattern: "chat g l m",
+        canonical: "ChatGLM",
+    },
+    TerminologyRule {
+        pattern: "glm four",
+        canonical: "GLM-4",
+    },
+    TerminologyRule {
+        pattern: "stable diffusion",
+        canonical: "Stable Diffusion",
+    },
+    TerminologyRule {
+        pattern: "mid journey",
+        canonical: "Midjourney",
+    },
+    TerminologyRule {
+        pattern: "fine tuning",
+        canonical: "fine-tuning",
+    },
+    TerminologyRule {
+        pattern: "fine tune",
+        canonical: "fine-tune",
+    },
+    // Object storage / data infrastructure
+    TerminologyRule {
+        pattern: "rust fs",
+        canonical: "RustFS",
+    },
+    // Java / Spring ecosystem
+    TerminologyRule {
+        pattern: "hibernate o r m",
+        canonical: "Hibernate",
+    },
+    // Rust ecosystem
+    TerminologyRule {
+        pattern: "rust fmt",
+        canonical: "rustfmt",
+    },
+    TerminologyRule {
+        pattern: "sea o r m",
+        canonical: "SeaORM",
+    },
+    // Python ecosystem
+    TerminologyRule {
+        pattern: "pie charm",
+        canonical: "PyCharm",
+    },
+    // Cloud / DevOps / infra tooling
+    TerminologyRule {
+        pattern: "cube cuddle",
+        canonical: "kubectl",
+    },
+    // AI / ML
+    TerminologyRule {
+        pattern: "retrieval augmented generation",
+        canonical: "RAG",
+    },
 ];
 
 const MAX_DETERMINISTIC_CORRECTIONS: usize = 100;
@@ -658,5 +1180,56 @@ mod tests {
     fn toggle_off_still_applies_user_corrections() {
         let rule = user_rule("code x", "CodEx");
         assert_eq!(finalize("code x", false, &[rule]), "CodEx");
+    }
+    #[test]
+    fn named_infrastructure_terms_are_corrected() {
+        // Terms the user reported as being transcribed as stray letters.
+        assert_eq!(
+            apply_terminology("我们用 rust fs 存文件"),
+            "我们用 RustFS 存文件"
+        );
+        assert_eq!(
+            apply_terminology("部署一个 min io 集群"),
+            "部署一个 MinIO 集群"
+        );
+        assert_eq!(
+            apply_terminology("用 spring boot 写服务"),
+            "用 Spring Boot 写服务"
+        );
+        assert_eq!(
+            apply_terminology("连接 my s q l 数据库"),
+            "连接 MySQL 数据库"
+        );
+        assert_eq!(apply_terminology("用 g r p c 通信"), "用 gRPC 通信");
+        assert_eq!(apply_terminology("把 kube cuddle 装上"), "把 kubectl 装上");
+    }
+
+    #[test]
+    fn ordinary_english_words_are_never_capitalised_into_products() {
+        // Every one of these is a normal word that also happens to be a product
+        // or crate name. A single-word rule for them would corrupt prose.
+        for sentence in [
+            "the rocket launched on time",
+            "we need less memory",
+            "the raft drifted downstream",
+            "warp speed ahead",
+            "he clapped twice",
+            "she used uv light",
+            "the apache helicopter flew",
+            "pandas eat bamboo",
+            "apollo was a mission",
+            "django is a film",
+            "a flask of water",
+            "a tornado warning",
+            "celery is a vegetable",
+            "angular geometry",
+            "reduce the noise",
+        ] {
+            assert_eq!(
+                apply_terminology(sentence),
+                sentence,
+                "ordinary prose must stay untouched: {sentence}"
+            );
+        }
     }
 }
