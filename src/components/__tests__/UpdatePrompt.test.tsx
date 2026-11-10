@@ -40,6 +40,7 @@ vi.mock('react-i18next', () => ({
 afterEach(() => {
   cleanup()
   vi.clearAllMocks()
+  mockOpenUrl.mockResolvedValue(undefined)
 })
 
 describe('UpdatePrompt', () => {

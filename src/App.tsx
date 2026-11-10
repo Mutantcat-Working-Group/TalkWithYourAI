@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import i18n from './i18n'
 import { useTauriEvents } from './hooks/useTauriEvents'
 import { useTheme } from './hooks/useTheme'
+import { useCancelDictationShortcut } from './hooks/useCancelDictationShortcut'
 import { useAppStore } from './stores/appStore'
 import { useRoute } from './lib/router'
 import {
@@ -81,6 +82,8 @@ function AskApp() {
 function MainApp() {
   useTauriEvents()
   useTheme()
+  // Escape cancels the running dictation while the main window has focus.
+  useCancelDictationShortcut()
 
   const onboardingCompleted = useAppStore((s) => s.onboardingCompleted)
   const setOnboardingCompleted = useAppStore((s) => s.setOnboardingCompleted)

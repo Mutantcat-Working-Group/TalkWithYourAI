@@ -204,6 +204,12 @@
       "exit": "Quitter"
     }
   },
+  "polishRecovery": {
+    "title": "Échec de l'amélioration",
+    "retry": "Réessayer",
+    "insertRaw": "Insérer le texte original",
+    "cancel": "Annuler"
+  },
   "settings": {
     "title": "Paramètres",
     "general": "Général",

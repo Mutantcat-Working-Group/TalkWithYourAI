@@ -305,6 +305,19 @@ fn selected_text_command_requires_llm(selected_text: Option<&str>) -> bool {
     selected_text_has_content(selected_text)
 }
 
+/// User's answer when a failed polish is offered the choice of retrying or
+/// inserting the raw transcript.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum PolishRecoveryChoice {
+    /// Try the LLM again. Repeats as many times as the user asks.
+    Retry,
+    /// Insert the raw STT transcript (the previous automatic behaviour).
+    InsertRaw,
+    /// Discard this dictation entirely.
+    Cancel,
+}
+
 /// What to do when LLM polish fails.
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum PolishFailureRouting {
@@ -774,6 +787,9 @@ pub struct PipelineHandle {
     /// Without this, a quick press-release in hold mode causes stop() to run
     /// while start() is still connecting to STT, finding empty fields.
     pipeline_lock: Arc<tokio::sync::Mutex<()>>,
+    /// One-shot sender for the user's answer to a failed-polish prompt.
+    /// `Some` only while the pipeline is waiting for a decision.
+    recovery_reply: Arc<Mutex<Option<mpsc::Sender<PolishRecoveryChoice>>>>,
 }
 
 struct PolishTextInput<'a> {
@@ -793,6 +809,9 @@ struct PolishTextInput<'a> {
 struct PolishTextOutcome {
     final_text: String,
     llm_elapsed: std::time::Duration,
+    /// Set when the polish failed and the user chose to try again. The caller
+    /// loops back to the polish step instead of emitting anything.
+    retry_requested: bool,
     /// True only when the LLM actually produced the text. On a polish
     /// failure the dictation degrades to the raw STT transcript and this
     /// stays false, with `polish_fallback_reason` explaining why.
@@ -986,6 +1005,7 @@ impl PolishTextOutcome {
             polish_fallback_reason: None,
             history_output_status: None,
             history_output_error: None,
+            retry_requested: false,
             voice_execution: None,
         }
     }
@@ -1007,6 +1027,22 @@ impl PolishTextOutcome {
             polish_fallback_reason: Some(reason.into()),
             history_output_status,
             history_output_error,
+            retry_requested: false,
+            voice_execution: None,
+        }
+    }
+
+    /// The user asked to try the polish again. The caller loops back instead of
+    /// emitting anything.
+    fn retry_requested(llm_elapsed: std::time::Duration) -> Self {
+        Self {
+            final_text: String::new(),
+            llm_elapsed,
+            retry_requested: true,
+            polished: false,
+            polish_fallback_reason: Some("user_requested_retry".to_string()),
+            history_output_status: None,
+            history_output_error: None,
             voice_execution: None,
         }
     }
@@ -1024,6 +1060,7 @@ impl PolishTextOutcome {
             polish_fallback_reason: None,
             history_output_status: Some(status.to_string()),
             history_output_error: Some(error.into()),
+            retry_requested: false,
             voice_execution: None,
         }
     }
@@ -1043,6 +1080,7 @@ impl PolishTextOutcome {
             history_output_status,
             history_output_error,
             voice_execution: Some(execution),
+            retry_requested: false,
         }
     }
 }
@@ -1075,6 +1113,7 @@ impl PipelineHandle {
             active_translation_operation: Arc::new(Mutex::new(None)),
             shared_client,
             pipeline_lock: Arc::new(tokio::sync::Mutex::new(())),
+            recovery_reply: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -1131,6 +1170,75 @@ impl PipelineHandle {
             .ok_or_else(|| "translation_not_recording".to_string())?
             .switch_target(target)
             .map_err(str::to_string)
+    }
+
+    /// Ask the user how to recover from a failed polish, and wait for the
+    /// answer. Emits `llm:polish-failed` so the UI can offer retry / insert /
+    /// cancel; the UI answers through `submit_polish_recovery_choice`.
+    ///
+    /// Returns `None` only if the UI never answers, which is treated as cancel
+    /// rather than silently emitting text the user never approved.
+    async fn request_polish_recovery(
+        &self,
+        error: &str,
+        raw_text: &str,
+        retry_available: bool,
+    ) -> Option<PolishRecoveryChoice> {
+        let (tx, mut rx) = mpsc::channel::<PolishRecoveryChoice>(1);
+        *self
+            .recovery_reply
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Some(tx);
+
+        let _ = self.app_handle.emit(
+            "llm:polish-failed",
+            serde_json::json!({
+                "error": error,
+                "rawTextLength": raw_text.chars().count(),
+                "retryAvailable": retry_available,
+            }),
+        );
+
+        // The user may also cancel via the cancel shortcut, which aborts the
+        // pipeline; treat an abort as "cancel" so nothing is emitted.
+        let choice = tokio::select! {
+            biased;
+            _ = self.wait_for_abort() => None,
+            answer = rx.recv() => answer,
+        };
+
+        *self
+            .recovery_reply
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = None;
+        choice
+    }
+
+    /// Resolves when the abort flag is set. Used to unblock a prompt that is
+    /// waiting on the user.
+    async fn wait_for_abort(&self) {
+        // The abort flag is an AtomicBool, so poll it: the existing pipeline
+        // code already polls this way and the prompt lifetime is short.
+        while !self.abort_flag.load(Ordering::SeqCst) {
+            tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        }
+    }
+
+    /// Delivers the user's answer to a pending failed-polish prompt.
+    /// Returns false when nothing was waiting.
+    pub fn submit_polish_recovery_choice(&self, choice: PolishRecoveryChoice) -> bool {
+        let sender = self
+            .recovery_reply
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .take();
+        match sender {
+            Some(sender) => {
+                let _ = sender.try_send(choice);
+                true
+            }
+            None => false,
+        }
     }
 
     /// Immediately abort the pipeline regardless of current state.
@@ -2016,20 +2124,28 @@ impl PipelineHandle {
         }
 
         // ── Phase 2: LLM polish + output ───────────────────────────────
-        let polish_outcome = self
-            .polish_text(PolishTextInput {
-                raw_text: &raw_text,
-                voice_mode,
-                config: &config,
-                app_ctx: &app_ctx,
-                dictionary_words,
-                correction_rules,
-                selected_text,
-                operation_id: None,
-                voice_intent,
-                popup_fallback_enabled: true,
-            })
-            .await;
+        // A failed polish can be retried: the user is asked, and "retry" loops
+        // back here as many times as they want without re-running STT.
+        let polish_outcome = loop {
+            let outcome = self
+                .polish_text(PolishTextInput {
+                    raw_text: &raw_text,
+                    voice_mode,
+                    config: &config,
+                    app_ctx: &app_ctx,
+                    dictionary_words: dictionary_words.clone(),
+                    correction_rules: correction_rules.clone(),
+                    selected_text: selected_text.clone(),
+                    operation_id: None,
+                    voice_intent: voice_intent.clone(),
+                    popup_fallback_enabled: true,
+                })
+                .await;
+            if !outcome.retry_requested {
+                break outcome;
+            }
+            tracing::info!("Retrying LLM polish at the user's request");
+        };
         let final_text = polish_outcome.final_text;
         let llm_elapsed = polish_outcome.llm_elapsed;
         if let Some(reason) = polish_outcome.polish_fallback_reason.as_deref() {
@@ -2260,6 +2376,7 @@ impl PipelineHandle {
                 polish_fallback_reason: None,
                 history_output_status: output_metadata.status,
                 history_output_error: output_metadata.error,
+                retry_requested: false,
                 voice_execution: None,
             };
         }
@@ -2639,6 +2756,7 @@ impl PipelineHandle {
                             history_output_error: Some(format!(
                                 "LLM polish failed after partial streaming insert: {e}"
                             )),
+                            retry_requested: false,
                             voice_execution: None,
                         };
                     }
@@ -2671,15 +2789,34 @@ impl PipelineHandle {
                         );
                     }
                     PolishFailureRouting::EmitRawTranscript => {
-                        // Plain dictation degrades gracefully: warn (non-
-                        // blocking toast), then type the raw transcript once.
-                        tracing::warn!(
-                            "LLM polish failed, falling back to the raw transcript: {}",
-                            e
-                        );
-                        let _ = self
-                            .app_handle
-                            .emit("pipeline:warning", llm_polish_fallback_user_error(&e));
+                        // Plain dictation: ask before deciding. The user may
+                        // retry as often as they like, insert the raw
+                        // transcript, or discard this dictation.
+                        tracing::warn!("LLM polish failed, asking the user how to proceed: {}", e);
+                        match self
+                            .request_polish_recovery(&e.to_string(), raw_text, true)
+                            .await
+                        {
+                            Some(PolishRecoveryChoice::Retry) => {
+                                return PolishTextOutcome::retry_requested(elapsed);
+                            }
+                            Some(PolishRecoveryChoice::InsertRaw) => {
+                                let _ = self
+                                    .app_handle
+                                    .emit("pipeline:warning", llm_polish_fallback_user_error(&e));
+                            }
+                            Some(PolishRecoveryChoice::Cancel) | None => {
+                                tracing::info!(
+                                    "User discarded the dictation after a polish failure"
+                                );
+                                return PolishTextOutcome::with_history_status(
+                                    String::new(),
+                                    elapsed,
+                                    "fallback",
+                                    "user_cancelled_after_polish_failure",
+                                );
+                            }
+                        }
                     }
                 }
                 let output_result = self
@@ -3953,5 +4090,26 @@ mod tests {
             history_provider_kind(&remote),
             storage::HistoryProviderKind::Byok
         );
+    }
+    #[test]
+    fn polish_recovery_choice_round_trips_through_serde() {
+        // The frontend sends these exact strings.
+        for (json, expected) in [
+            ("\"retry\"", PolishRecoveryChoice::Retry),
+            ("\"insert_raw\"", PolishRecoveryChoice::InsertRaw),
+            ("\"cancel\"", PolishRecoveryChoice::Cancel),
+        ] {
+            let parsed: PolishRecoveryChoice = serde_json::from_str(json).unwrap();
+            assert_eq!(parsed, expected);
+        }
+    }
+
+    #[test]
+    fn retry_outcome_asks_the_caller_to_loop() {
+        let outcome = PolishTextOutcome::retry_requested(std::time::Duration::from_millis(5));
+        assert!(outcome.retry_requested);
+        // Nothing must be emitted on a retry.
+        assert!(outcome.final_text.is_empty());
+        assert!(!outcome.polished);
     }
 }

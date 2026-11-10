@@ -45,6 +45,8 @@ describe('useTauriEvents', () => {
       hotkeyRegistrationError: null,
       lastContext: null,
       activeVoiceMode: null,
+      polishFailure: null,
+      polishRecoveryAnswered: false,
     })
   })
 
@@ -195,6 +197,78 @@ describe('useTauriEvents', () => {
 
     expect(toast).toHaveBeenNthCalledWith(1, 'recordingLimits.deadlineWarning', 'info')
     expect(toast).toHaveBeenNthCalledWith(2, 'recordingLimits.deadlineReached', 'info')
+  })
+
+  it('shows the failed-polish prompt on llm:polish-failed and re-arms on a second failure', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('llm:polish-failed')).toBe(true))
+
+    act(() => {
+      eventListeners.get('llm:polish-failed')?.({
+        payload: { error: 'HTTP 503', rawTextLength: 42, retryAvailable: true },
+      })
+    })
+    expect(useAppStore.getState().polishFailure).toEqual({
+      error: 'HTTP 503',
+      rawTextLength: 42,
+      retryAvailable: true,
+    })
+
+    act(() => {
+      useAppStore.getState().setPolishRecoveryAnswered(true)
+      eventListeners.get('llm:polish-failed')?.({
+        payload: { error: 'HTTP 504', rawTextLength: 42, retryAvailable: true },
+      })
+    })
+    expect(useAppStore.getState().polishFailure?.error).toBe('HTTP 504')
+    expect(useAppStore.getState().polishRecoveryAnswered).toBe(false)
+  })
+
+  it('hides a stale pipeline error when the polish prompt appears', async () => {
+    useAppStore.setState({ pipelineError: 'Previous failure' })
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('llm:polish-failed')).toBe(true))
+
+    act(() => {
+      eventListeners.get('llm:polish-failed')?.({
+        payload: { error: 'HTTP 503', rawTextLength: 12, retryAvailable: true },
+      })
+    })
+
+    expect(useAppStore.getState().pipelineError).toBeNull()
+    expect(useAppStore.getState().polishFailure).not.toBeNull()
+  })
+
+  it('clears the failed-polish prompt when the pipeline leaves polishing', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:state')).toBe(true))
+
+    act(() => {
+      eventListeners.get('llm:polish-failed')?.({
+        payload: { error: 'HTTP 503', rawTextLength: 12, retryAvailable: true },
+      })
+    })
+    expect(useAppStore.getState().polishFailure).not.toBeNull()
+
+    act(() => {
+      eventListeners.get('pipeline:state')?.({ payload: 'outputting' })
+    })
+    expect(useAppStore.getState().polishFailure).toBeNull()
+    expect(useAppStore.getState().polishRecoveryAnswered).toBe(false)
+  })
+
+  it('keeps the failed-polish prompt across polishing state re-emissions', async () => {
+    render(<HookHarness />)
+    await waitFor(() => expect(eventListeners.has('pipeline:state')).toBe(true))
+
+    act(() => {
+      eventListeners.get('pipeline:state')?.({ payload: 'polishing' })
+      eventListeners.get('llm:polish-failed')?.({
+        payload: { error: 'HTTP 503', rawTextLength: 12, retryAvailable: true },
+      })
+      eventListeners.get('pipeline:state')?.({ payload: 'polishing' })
+    })
+    expect(useAppStore.getState().polishFailure).not.toBeNull()
   })
 
   it('refreshes history on idle without any subscription polling', async () => {

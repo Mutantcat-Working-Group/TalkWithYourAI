@@ -244,6 +244,9 @@ pub enum HotkeyRole {
     EditSelection,
     SwitchScene,
     OpenApp,
+    /// Cancels the current dictation outright, including while a failed-polish
+    /// prompt is waiting for an answer.
+    Cancel,
 }
 
 impl HotkeyRole {
@@ -255,6 +258,7 @@ impl HotkeyRole {
             Self::EditSelection => "editSelection",
             Self::SwitchScene => "switchScene",
             Self::OpenApp => "openApp",
+            Self::Cancel => "cancel",
         }
     }
 }
@@ -519,6 +523,14 @@ pub(crate) fn hotkey_registration_plan_from_config_for_platform(
         platform,
     )?;
 
+    // Cancel is a fixed safety binding rather than a user preference: it must
+    // always be available to stop a runaway dictation, including while a
+    // failed-polish prompt is waiting.
+    let cancel_binding = storage::ShortcutBinding::from_hotkey(default_cancel_hotkey());
+    if let Some(cancel_binding) = cancel_binding {
+        push_registered_hotkey(&mut plan, HotkeyRole::Cancel, 0, &cancel_binding, platform)?;
+    }
+
     Ok(plan)
 }
 
@@ -542,6 +554,20 @@ pub fn role_for_global_shortcut(
         .iter()
         .find(|registered| shortcuts_match(&registered.shortcut, shortcut))
         .map(|registered| registered.role)
+}
+
+/// Default cancel binding, as a hotkey string so it flows through the same
+/// normalization as every other binding. Global hotkeys need a modifier on
+/// every platform, so this is Cmd+Escape on macOS and Ctrl+Escape elsewhere.
+pub fn default_cancel_hotkey() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "Cmd+Escape"
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        "Ctrl+Escape"
+    }
 }
 
 pub fn default_shortcut() -> Shortcut {
@@ -953,6 +979,18 @@ pub fn handle_hotkey_role_event(
             );
             handle_recording_shortcut(handle, action);
         }
+        HotkeyRole::Cancel => {
+            // Press only, and only while something is actually in flight.
+            if event_state == ShortcutState::Pressed {
+                let pipeline = handle.state::<pipeline::PipelineHandle>();
+                let ask_state = handle.state::<commands::ask::AskDictationState>();
+                if ask_state.is_recording() || ask_state.is_starting() || ask_state.is_busy() {
+                    let _ = commands::ask::abort_ask_dictation(handle.clone(), ask_state);
+                } else if pipeline.current_state() != pipeline::PipelineState::Idle {
+                    pipeline.abort();
+                }
+            }
+        }
         role => handle_advanced_role_shortcut(handle, role, event_state),
     }
 }
@@ -1227,8 +1265,13 @@ mod tests {
             plan.native[0].trigger,
             crate::native_hotkey::NativeHotkeyTrigger::RightAlt
         );
-        assert_eq!(plan.global.len(), 1);
+        // Ask plus the always-on Cancel safety binding.
+        assert_eq!(plan.global.len(), 2);
         assert_eq!(plan.global[0].role, HotkeyRole::Ask);
+        assert!(plan
+            .global
+            .iter()
+            .any(|entry| entry.role == HotkeyRole::Cancel));
     }
 
     #[test]
@@ -1251,7 +1294,10 @@ mod tests {
 
         let plan = hotkey_registration_plan_from_config_for_platform(&config, "macos").unwrap();
 
-        assert!(plan.global.is_empty());
+        // No global dictation/ask bindings in native typeless mode, but the
+        // Cancel safety binding is always registered globally.
+        assert_eq!(plan.global.len(), 1);
+        assert_eq!(plan.global[0].role, HotkeyRole::Cancel);
         assert!(plan.native.iter().any(|entry| {
             entry.role == HotkeyRole::Dictation
                 && entry.trigger == crate::native_hotkey::NativeHotkeyTrigger::Fn
@@ -1370,6 +1416,7 @@ mod tests {
                 HotkeyRole::EditSelection,
                 HotkeyRole::SwitchScene,
                 HotkeyRole::OpenApp,
+                HotkeyRole::Cancel,
             ]
         );
     }
@@ -1403,6 +1450,7 @@ mod tests {
                 (HotkeyRole::Ask, 0),
                 (HotkeyRole::Ask, 1),
                 (HotkeyRole::TranslateSelection, 0),
+                (HotkeyRole::Cancel, 0),
             ]
         );
     }

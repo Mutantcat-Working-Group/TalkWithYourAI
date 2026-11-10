@@ -8,6 +8,7 @@ import type {
   ContextProfileSummary,
   InsertResult,
   PipelineState,
+  PolishFailurePrompt,
   RecordingDeadlineSnapshot,
   VoiceMode,
 } from '../stores/appStore'
@@ -60,6 +61,8 @@ export function useTauriEvents() {
     setHistory,
     applyPersistedConfigPatch,
     setHotkeyRegistrationError,
+    setPolishFailure,
+    clearPolishFailure,
   } = useAppStore()
 
   useEffect(() => {
@@ -84,8 +87,24 @@ export function useTauriEvents() {
     addListener<string>('stt:partial', setPartialTranscript)
     addListener<string>('stt:final', setFinalTranscript)
     addListener<string>('llm:chunk', appendPolishedChunk)
+    addListener<PolishFailurePrompt>('llm:polish-failed', (payload) => {
+      // Re-arm the prompt on every failure so a retry that fails again asks
+      // again. The backend keeps waiting until the UI answers.
+      setPolishFailure({
+        error: payload?.error ?? '',
+        rawTextLength: payload?.rawTextLength ?? 0,
+        retryAvailable: payload?.retryAvailable ?? true,
+      })
+      // The prompt replaces any previous error pill; a stale error would hide it.
+      setPipelineError(null)
+    })
     addListener<PipelineState>('pipeline:state', (state) => {
       setPipelineState(state)
+      if (state !== 'polishing') {
+        // The polish prompt only exists while the backend is waiting inside
+        // the polishing phase; leaving it resolves the prompt one way or another.
+        clearPolishFailure()
+      }
       if (state === 'preparing' || state === 'idle') {
         setRecordingDeadline(null)
       }
@@ -184,6 +203,8 @@ export function useTauriEvents() {
     setHistory,
     applyPersistedConfigPatch,
     setHotkeyRegistrationError,
+    setPolishFailure,
+    clearPolishFailure,
     t,
   ])
 }

@@ -108,6 +108,7 @@ export interface CapsuleVisibilityInput {
   capsuleExpanded: boolean
   hasError: boolean
   pipelineState: PipelineState
+  hasPolishPrompt?: boolean
 }
 
 export function getCapsuleVisibility({
@@ -117,6 +118,7 @@ export function getCapsuleVisibility({
   capsuleExpanded,
   hasError,
   pipelineState,
+  hasPolishPrompt = false,
 }: CapsuleVisibilityInput): boolean {
   return (
     !capsuleAutoHide ||
@@ -124,6 +126,7 @@ export function getCapsuleVisibility({
     translationTargetMenuOpen ||
     capsuleExpanded ||
     hasError ||
+    hasPolishPrompt ||
     pipelineState !== 'idle'
   )
 }
@@ -138,9 +141,12 @@ function getSizeForState(
   hasError: boolean,
   contextMenuOpen: boolean,
   translationTargetMenuOpen = false,
+  hasPolishPrompt = false,
 ): CapsuleSize {
   if (translationTargetMenuOpen) return { width: 360, height: 180 }
   if (contextMenuOpen) return { width: 220, height: 220 }
+  // The failed-polish prompt replaces the pill with a small floating card.
+  if (hasPolishPrompt) return { width: 300, height: 80 }
   if (hasError) return { width: 200, height: 36 }
   if (expanded) return { width: 220, height: 90 }
   switch (state) {
@@ -168,6 +174,7 @@ export function useCapsuleResize() {
   const pipelineError = useAppStore((s) => s.pipelineError)
   const contextMenuOpen = useAppStore((s) => s.contextMenuOpen)
   const translationTargetMenuOpen = useAppStore((s) => s.translationTargetMenuOpen)
+  const polishFailure = useAppStore((s) => s.polishFailure)
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
   const capsuleAutoHide = useAppStore((s) => s.config.capsule_auto_hide)
   const initialized = useRef(false)
@@ -175,6 +182,7 @@ export function useCapsuleResize() {
   const effectGeneration = useRef(0)
 
   const hasError = pipelineError !== null
+  const hasPolishPrompt = polishFailure !== null
 
   useEffect(() => {
     const generation = ++effectGeneration.current
@@ -186,6 +194,7 @@ export function useCapsuleResize() {
       hasError,
       contextMenuOpen,
       translationTargetMenuOpen,
+      hasPolishPrompt,
     )
     const windowWidth = size.width + 24
     const windowHeight = size.height + 24
@@ -196,6 +205,7 @@ export function useCapsuleResize() {
       capsuleExpanded,
       hasError,
       pipelineState,
+      hasPolishPrompt,
     })
 
     import('@tauri-apps/api/window')
@@ -416,6 +426,7 @@ export function useCapsuleResize() {
     translationTargetMenuOpen,
     capsuleAutoHide,
     setContextMenuReady,
+    hasPolishPrompt,
   ])
 
   return getSizeForState(
@@ -424,5 +435,6 @@ export function useCapsuleResize() {
     hasError,
     contextMenuOpen,
     translationTargetMenuOpen,
+    hasPolishPrompt,
   )
 }

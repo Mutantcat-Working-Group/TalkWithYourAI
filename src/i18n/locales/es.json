@@ -204,6 +204,12 @@
       "exit": "Salir"
     }
   },
+  "polishRecovery": {
+    "title": "Error al pulir",
+    "retry": "Reintentar",
+    "insertRaw": "Insertar texto original",
+    "cancel": "Cancelar"
+  },
   "settings": {
     "title": "Configuración",
     "general": "General",

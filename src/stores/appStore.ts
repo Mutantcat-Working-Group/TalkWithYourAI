@@ -13,6 +13,12 @@ export type PipelineState =
 
 export type VoiceMode = 'dictate' | 'ask' | 'translate'
 
+export interface PolishFailurePrompt {
+  error: string
+  rawTextLength: number
+  retryAvailable: boolean
+}
+
 export type SttProvider =
   | 'deepgram'
   | 'assemblyai'
@@ -325,6 +331,13 @@ interface AppState {
   // Pipeline error
   pipelineError: string | null
   setPipelineError: (error: string | null) => void
+
+  // Failed-polish prompt
+  polishFailure: PolishFailurePrompt | null
+  setPolishFailure: (prompt: PolishFailurePrompt | null) => void
+  polishRecoveryAnswered: boolean
+  setPolishRecoveryAnswered: (answered: boolean) => void
+  clearPolishFailure: () => void
 
   // macOS Accessibility permission
   accessibilityTrusted: boolean
@@ -870,6 +883,11 @@ export const useAppStore = create<AppState>((set) => ({
 
   pipelineError: null,
   setPipelineError: (pipelineError) => set({ pipelineError }),
+  polishFailure: null,
+  setPolishFailure: (polishFailure) => set({ polishFailure, polishRecoveryAnswered: false }),
+  polishRecoveryAnswered: false,
+  setPolishRecoveryAnswered: (polishRecoveryAnswered) => set({ polishRecoveryAnswered }),
+  clearPolishFailure: () => set({ polishFailure: null, polishRecoveryAnswered: false }),
 
   accessibilityTrusted: true,
   setAccessibilityTrusted: (accessibilityTrusted) => set({ accessibilityTrusted }),

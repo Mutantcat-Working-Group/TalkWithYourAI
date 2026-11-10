@@ -204,6 +204,12 @@
       "exit": "Exit"
     }
   },
+  "polishRecovery": {
+    "title": "Polish failed",
+    "retry": "Retry",
+    "insertRaw": "Insert original text",
+    "cancel": "Cancel"
+  },
   "settings": {
     "title": "Settings",
     "general": "General",

@@ -1154,6 +1154,7 @@ pub fn run() {
             commands::misc::pause_hotkey,
             commands::misc::resume_hotkey,
             commands::misc::refresh_tray_labels,
+            commands::misc::submit_polish_recovery_choice,
             commands::misc::get_platform_capabilities,
             commands::misc::check_for_update,
             commands::misc::get_hotkey_registration_error,

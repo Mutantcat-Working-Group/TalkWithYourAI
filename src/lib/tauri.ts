@@ -25,6 +25,16 @@ export async function abortRecording(): Promise<void> {
   return invoke('abort_recording')
 }
 
+export type PolishRecoveryChoice = 'retry' | 'insert_raw' | 'cancel'
+
+/**
+ * Answers a pending failed-polish prompt. Resolves false when the backend is
+ * no longer waiting (for example the pipeline already moved on).
+ */
+export async function submitPolishRecoveryChoice(choice: PolishRecoveryChoice): Promise<boolean> {
+  return invoke('submit_polish_recovery_choice', { choice })
+}
+
 export async function setActiveTranslationTarget(code: string): Promise<TranslationConfig> {
   return invoke('set_active_translation_target', { code })
 }

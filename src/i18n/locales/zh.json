@@ -204,6 +204,12 @@
       "exit": "退出"
     }
   },
+  "polishRecovery": {
+    "title": "润色失败",
+    "retry": "重新生成",
+    "insertRaw": "直接插入原文",
+    "cancel": "取消"
+  },
   "settings": {
     "title": "设置",
     "general": "通用",

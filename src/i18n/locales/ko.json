@@ -204,6 +204,12 @@
       "exit": "종료"
     }
   },
+  "polishRecovery": {
+    "title": "다듬기 실패",
+    "retry": "다시 시도",
+    "insertRaw": "원문 삽입",
+    "cancel": "취소"
+  },
   "settings": {
     "title": "설정",
     "general": "일반",

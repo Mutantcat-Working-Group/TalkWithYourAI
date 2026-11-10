@@ -204,6 +204,12 @@
       "exit": "Sair"
     }
   },
+  "polishRecovery": {
+    "title": "Falha no polimento",
+    "retry": "Tentar novamente",
+    "insertRaw": "Inserir texto original",
+    "cancel": "Cancelar"
+  },
   "settings": {
     "title": "Configurações",
     "general": "Geral",

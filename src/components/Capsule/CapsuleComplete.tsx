@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { Check } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { useEffect } from 'react'
 import { useAppStore } from '../../stores/appStore'
 import { spring } from '../../lib/animations'
@@ -18,6 +18,16 @@ export function CapsuleComplete() {
     return () => clearTimeout(timer)
   }, [resetRecording, setPipelineState])
 
+  const handleDismiss = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    resetRecording()
+    setPipelineState('idle')
+  }
+
+  const stopPointerPropagation = (event: React.PointerEvent) => {
+    event.stopPropagation()
+  }
+
   return (
     <motion.div className="relative z-10 flex items-center gap-1.5 h-9 px-3">
       <motion.div
@@ -28,6 +38,15 @@ export function CapsuleComplete() {
         <Check size={14} className="text-white" />
       </motion.div>
       <span className="text-[11px] text-white font-medium">{t('capsule.done')}</span>
+      <button
+        onPointerDown={stopPointerPropagation}
+        onPointerUp={stopPointerPropagation}
+        onClick={handleDismiss}
+        aria-label={t('capsule.cancelProcessing')}
+        className="shrink-0 rounded-full border-none bg-transparent p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white cursor-pointer"
+      >
+        <X size={12} />
+      </button>
     </motion.div>
   )
 }

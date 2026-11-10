@@ -204,6 +204,12 @@
       "exit": "Esci"
     }
   },
+  "polishRecovery": {
+    "title": "Rifinitura non riuscita",
+    "retry": "Riprova",
+    "insertRaw": "Inserisci il testo originale",
+    "cancel": "Annulla"
+  },
   "settings": {
     "title": "Impostazioni",
     "general": "Generali",

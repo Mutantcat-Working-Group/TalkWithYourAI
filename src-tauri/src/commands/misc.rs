@@ -896,6 +896,16 @@ pub async fn check_for_update(
         .map_err(|error| error.to_string())
 }
 
+/// Deliver the user's answer to a failed-polish prompt. Returns false when no
+/// prompt was waiting, which the UI can treat as "already resolved".
+#[tauri::command]
+pub fn submit_polish_recovery_choice(
+    pipeline: tauri::State<'_, crate::pipeline::PipelineHandle>,
+    choice: crate::pipeline::PolishRecoveryChoice,
+) -> bool {
+    pipeline.submit_polish_recovery_choice(choice)
+}
+
 #[tauri::command]
 pub fn get_platform_capabilities() -> platform::PlatformCapabilities {
     platform::capabilities()

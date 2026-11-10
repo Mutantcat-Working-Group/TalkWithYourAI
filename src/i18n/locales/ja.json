@@ -204,6 +204,12 @@
       "exit": "終了"
     }
   },
+  "polishRecovery": {
+    "title": "整形に失敗しました",
+    "retry": "再試行",
+    "insertRaw": "元のテキストを挿入",
+    "cancel": "キャンセル"
+  },
   "settings": {
     "title": "設定",
     "general": "一般",

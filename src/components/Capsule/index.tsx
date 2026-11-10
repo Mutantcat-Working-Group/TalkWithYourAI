@@ -15,10 +15,15 @@ import { CapsuleContextMenu } from './CapsuleContextMenu'
 import { CapsuleAskRecording } from './CapsuleAskRecording'
 import { CapsuleAskThinking } from './CapsuleAskThinking'
 import { TranslateTargetMenu } from './TranslateTargetChip'
+import { PolishRecoveryPrompt } from './PolishRecoveryPrompt'
+import { useCancelDictationShortcut } from '../../hooks/useCancelDictationShortcut'
 
 const DRAG_THRESHOLD = 5
 
-function getCapsuleState(pipelineState: string, hasError: boolean) {
+function getCapsuleState(pipelineState: string, hasError: boolean, hasPolishPrompt: boolean) {
+  // The failed-polish prompt takes over the capsule so it stays compact and
+  // visible without becoming a focus-stealing modal.
+  if (hasPolishPrompt) return 'polish_recovery'
   if (hasError) return 'error'
   return pipelineState
 }
@@ -39,6 +44,8 @@ function getCapsuleShellSize(capsuleState: string) {
     case 'polishing':
     case 'error':
       return { width: 200, height: 36 }
+    case 'polish_recovery':
+      return { width: 300, height: 80 }
     default:
       return { width: 36, height: 36 }
   }
@@ -49,6 +56,7 @@ export function Capsule() {
   const pipelineError = useAppStore((s) => s.pipelineError)
   const contextMenuOpen = useAppStore((s) => s.contextMenuOpen)
   const setContextMenuOpen = useAppStore((s) => s.setContextMenuOpen)
+  const polishFailure = useAppStore((s) => s.polishFailure)
   const contextMenuReady = useAppStore((s) => s.contextMenuReady)
   const setContextMenuReady = useAppStore((s) => s.setContextMenuReady)
   const translationTargetMenuOpen = useAppStore((s) => s.translationTargetMenuOpen)
@@ -60,8 +68,13 @@ export function Capsule() {
 
   useCapsuleResize()
 
+  // Escape cancels the running dictation, including while the failed-polish
+  // prompt is showing.
+  useCancelDictationShortcut()
+
   const hasError = pipelineError !== null
-  const capsuleState = getCapsuleState(pipelineState, hasError)
+  const hasPolishPrompt = polishFailure !== null
+  const capsuleState = getCapsuleState(pipelineState, hasError, hasPolishPrompt)
   const capsuleShellSize = getCapsuleShellSize(capsuleState)
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -140,12 +153,14 @@ export function Capsule() {
       <motion.div
         layout
         transition={{ layout: { duration: 0.2, ease: [0.2, 0, 0, 1] } }}
-        className={`absolute left-3 rounded-full pointer-events-auto shrink-0 ${
-          capsuleState === 'error'
-            ? 'jelly-capsule-error'
-            : capsuleState === 'idle'
-              ? 'jelly-capsule text-neutral-700'
-              : 'jelly-capsule-active text-white'
+        className={`absolute left-3 pointer-events-auto shrink-0 ${
+          capsuleState === 'polish_recovery'
+            ? 'jelly-capsule-active text-white rounded-[14px]'
+            : capsuleState === 'error'
+              ? 'jelly-capsule-error rounded-full'
+              : capsuleState === 'idle'
+                ? 'jelly-capsule text-neutral-700 rounded-full'
+                : 'jelly-capsule-active text-white rounded-full'
         }`}
         style={capsuleShellSize}
         onPointerDown={handlePointerDown}
@@ -170,6 +185,7 @@ export function Capsule() {
             {capsuleState === 'ask_recording' && <CapsuleAskRecording />}
             {capsuleState === 'ask_thinking' && <CapsuleAskThinking />}
             {capsuleState === 'error' && <CapsuleError />}
+            {capsuleState === 'polish_recovery' && <PolishRecoveryPrompt />}
           </motion.div>
         </AnimatePresence>
       </motion.div>

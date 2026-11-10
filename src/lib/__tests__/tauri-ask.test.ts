@@ -6,6 +6,7 @@ import {
   startAskDictation,
   startAskFlow,
   stopAskFlow,
+  submitPolishRecoveryChoice,
   takePendingAskMessage,
   updateAskHotkey,
 } from '../tauri'
@@ -86,5 +87,22 @@ describe('Ask Anything Tauri wrappers', () => {
       selectedTextTruncated: false,
     })
     expect(invoke).toHaveBeenCalledWith('start_ask_dictation')
+  })
+
+  it.each(['retry', 'insert_raw', 'cancel'] as const)(
+    'submits the %s polish recovery choice',
+    async (choice) => {
+      vi.mocked(invoke).mockResolvedValueOnce(true)
+
+      await expect(submitPolishRecoveryChoice(choice)).resolves.toBe(true)
+
+      expect(invoke).toHaveBeenCalledWith('submit_polish_recovery_choice', { choice })
+    },
+  )
+
+  it('reports when the backend is no longer waiting for a polish answer', async () => {
+    vi.mocked(invoke).mockResolvedValueOnce(false)
+
+    await expect(submitPolishRecoveryChoice('cancel')).resolves.toBe(false)
   })
 })

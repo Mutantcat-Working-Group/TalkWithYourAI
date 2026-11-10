@@ -204,6 +204,12 @@
       "exit": "Beenden"
     }
   },
+  "polishRecovery": {
+    "title": "Glättung fehlgeschlagen",
+    "retry": "Wiederholen",
+    "insertRaw": "Originaltext einfügen",
+    "cancel": "Abbrechen"
+  },
   "settings": {
     "title": "Einstellungen",
     "general": "Allgemein",

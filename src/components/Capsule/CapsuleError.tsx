@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
+import { X } from 'lucide-react'
 import { useAppStore } from '../../stores/appStore'
 
 export function CapsuleError() {
@@ -23,6 +24,18 @@ export function CapsuleError() {
     return () => clearTimeout(timer)
   }, [setPipelineError, resetRecording, pipelineError])
 
+  const handleDismiss = (event: React.MouseEvent) => {
+    event.stopPropagation()
+    setPipelineError(null)
+    if (useAppStore.getState().pipelineState === 'idle') {
+      resetRecording()
+    }
+  }
+
+  const stopPointerPropagation = (event: React.PointerEvent) => {
+    event.stopPropagation()
+  }
+
   return (
     <motion.div
       className="relative z-10 flex items-center gap-2 h-9 px-3"
@@ -35,6 +48,15 @@ export function CapsuleError() {
       <p className="text-[11px] text-white truncate flex-1">
         {pipelineError || t('capsule.errors.unknown')}
       </p>
+      <button
+        onPointerDown={stopPointerPropagation}
+        onPointerUp={stopPointerPropagation}
+        onClick={handleDismiss}
+        aria-label={t('capsule.cancelProcessing')}
+        className="shrink-0 rounded-full border-none bg-transparent p-1 text-white/70 transition-colors hover:bg-white/15 hover:text-white cursor-pointer"
+      >
+        <X size={12} />
+      </button>
     </motion.div>
   )
 }
