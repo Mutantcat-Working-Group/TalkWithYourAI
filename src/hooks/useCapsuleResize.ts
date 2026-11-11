@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react'
 import { useAppStore, type PipelineState } from '../stores/appStore'
+import { getCapsuleSize, type CapsuleSize } from '../lib/capsuleSize'
 
-interface CapsuleSize {
-  width: number
-  height: number
-}
+export type { CapsuleSize, CapsuleVisualState } from '../lib/capsuleSize'
+export { getCapsuleShellSize, getCapsuleSize } from '../lib/capsuleSize'
 
 interface PhysicalPoint {
   x: number
@@ -135,40 +134,6 @@ export function getCapsuleFocusable(): boolean {
   return false
 }
 
-function getSizeForState(
-  state: PipelineState,
-  expanded: boolean,
-  hasError: boolean,
-  contextMenuOpen: boolean,
-  translationTargetMenuOpen = false,
-  hasPolishPrompt = false,
-): CapsuleSize {
-  if (translationTargetMenuOpen) return { width: 360, height: 180 }
-  if (contextMenuOpen) return { width: 220, height: 220 }
-  // The failed-polish prompt reuses the pill's own shape: one row, icon
-  // buttons only, same height as every other capsule state.
-  if (hasPolishPrompt) return { width: 232, height: 36 }
-  if (hasError) return { width: 200, height: 36 }
-  if (expanded) return { width: 220, height: 90 }
-  switch (state) {
-    case 'idle':
-      return { width: 36, height: 36 }
-    case 'preparing':
-      return { width: 180, height: 36 }
-    case 'recording':
-    case 'transcribing':
-    case 'polishing':
-      return { width: 200, height: 36 }
-    case 'outputting':
-      return { width: 144, height: 36 }
-    case 'ask_recording':
-    case 'ask_thinking':
-      return { width: 168, height: 36 }
-    default:
-      return { width: 36, height: 36 }
-  }
-}
-
 export function useCapsuleResize() {
   const pipelineState = useAppStore((s) => s.pipelineState)
   const capsuleExpanded = useAppStore((s) => s.capsuleExpanded)
@@ -189,7 +154,7 @@ export function useCapsuleResize() {
     const generation = ++effectGeneration.current
     let cancelled = false
     const isCurrent = () => !cancelled && effectGeneration.current === generation
-    const size = getSizeForState(
+    const size = getCapsuleSize(
       pipelineState,
       capsuleExpanded,
       hasError,
@@ -430,7 +395,7 @@ export function useCapsuleResize() {
     hasPolishPrompt,
   ])
 
-  return getSizeForState(
+  return getCapsuleSize(
     pipelineState,
     capsuleExpanded,
     hasError,

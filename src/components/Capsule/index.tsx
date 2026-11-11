@@ -4,6 +4,7 @@ import { useAppStore } from '../../stores/appStore'
 import { useRecording } from '../../hooks/useRecording'
 import { useCapsuleResize } from '../../hooks/useCapsuleResize'
 import { stopAskFlow } from '../../lib/tauri'
+import { getCapsuleShellSize, type CapsuleVisualState } from '../../lib/capsuleSize'
 import { CapsuleIdle } from './CapsuleIdle'
 import { CapsulePreparing } from './CapsulePreparing'
 import { CapsuleRecording } from './CapsuleRecording'
@@ -20,35 +21,16 @@ import { useCancelDictationShortcut } from '../../hooks/useCancelDictationShortc
 
 const DRAG_THRESHOLD = 5
 
-function getCapsuleState(pipelineState: string, hasError: boolean, hasPolishPrompt: boolean) {
+function getCapsuleState(
+  pipelineState: string,
+  hasError: boolean,
+  hasPolishPrompt: boolean,
+): CapsuleVisualState {
   // The failed-polish prompt takes over the capsule so it stays compact and
   // visible without becoming a focus-stealing modal.
   if (hasPolishPrompt) return 'polish_recovery'
   if (hasError) return 'error'
-  return pipelineState
-}
-
-function getCapsuleShellSize(capsuleState: string) {
-  switch (capsuleState) {
-    case 'idle':
-      return { width: 36, height: 36 }
-    case 'preparing':
-      return { width: 180, height: 36 }
-    case 'outputting':
-      return { width: 144, height: 36 }
-    case 'ask_recording':
-    case 'ask_thinking':
-      return { width: 168, height: 36 }
-    case 'recording':
-    case 'transcribing':
-    case 'polishing':
-    case 'error':
-      return { width: 200, height: 36 }
-    case 'polish_recovery':
-      return { width: 300, height: 80 }
-    default:
-      return { width: 36, height: 36 }
-  }
+  return pipelineState as CapsuleVisualState
 }
 
 export function Capsule() {
