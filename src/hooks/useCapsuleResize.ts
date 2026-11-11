@@ -145,8 +145,9 @@ function getSizeForState(
 ): CapsuleSize {
   if (translationTargetMenuOpen) return { width: 360, height: 180 }
   if (contextMenuOpen) return { width: 220, height: 220 }
-  // The failed-polish prompt replaces the pill with a small floating card.
-  if (hasPolishPrompt) return { width: 300, height: 80 }
+  // The failed-polish prompt reuses the pill's own shape: one row, icon
+  // buttons only, same height as every other capsule state.
+  if (hasPolishPrompt) return { width: 232, height: 36 }
   if (hasError) return { width: 200, height: 36 }
   if (expanded) return { width: 220, height: 90 }
   switch (state) {

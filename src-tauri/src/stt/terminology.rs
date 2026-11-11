@@ -1162,6 +1162,721 @@ pub const TERMINOLOGY: &[TerminologyRule] = &[
         pattern: "m t l s",
         canonical: "mTLS",
     },
+    // Networking / service mesh / VPN
+    TerminologyRule {
+        pattern: "net bird",
+        canonical: "NetBird",
+    },
+    TerminologyRule {
+        pattern: "net bird cloud",
+        canonical: "NetBird Cloud",
+    },
+    TerminologyRule {
+        pattern: "net bird self hosted",
+        canonical: "NetBird Self-hosted",
+    },
+    TerminologyRule {
+        pattern: "net maker",
+        canonical: "Netmaker",
+    },
+    TerminologyRule {
+        pattern: "tail scale",
+        canonical: "Tailscale",
+    },
+    TerminologyRule {
+        pattern: "tail scale funnel",
+        canonical: "Tailscale Funnel",
+    },
+    TerminologyRule {
+        pattern: "zero tier",
+        canonical: "ZeroTier",
+    },
+    TerminologyRule {
+        pattern: "wire guard",
+        canonical: "WireGuard",
+    },
+    TerminologyRule {
+        pattern: "open v p n",
+        canonical: "OpenVPN",
+    },
+    TerminologyRule {
+        pattern: "open vpn",
+        canonical: "OpenVPN",
+    },
+    TerminologyRule {
+        pattern: "head scale",
+        canonical: "Headscale",
+    },
+    TerminologyRule {
+        pattern: "frp tunnel",
+        canonical: "frp",
+    },
+    TerminologyRule {
+        pattern: "core dns",
+        canonical: "CoreDNS",
+    },
+    TerminologyRule {
+        pattern: "traefik proxy",
+        canonical: "Traefik",
+    },
+    TerminologyRule {
+        pattern: "traefik ingress",
+        canonical: "Traefik",
+    },
+    TerminologyRule {
+        pattern: "kong gateway",
+        canonical: "Kong",
+    },
+    TerminologyRule {
+        pattern: "kong ingress",
+        canonical: "Kong",
+    },
+    TerminologyRule {
+        pattern: "apisix gateway",
+        canonical: "APISIX",
+    },
+    TerminologyRule {
+        pattern: "api six",
+        canonical: "APISIX",
+    },
+    TerminologyRule {
+        pattern: "consul connect",
+        canonical: "Consul Connect",
+    },
+    TerminologyRule {
+        pattern: "envoy filter",
+        canonical: "Envoy",
+    },
+    TerminologyRule {
+        pattern: "istio sidecar",
+        canonical: "Istio",
+    },
+    TerminologyRule {
+        pattern: "side car",
+        canonical: "sidecar",
+    },
+    TerminologyRule {
+        pattern: "linkerd viz",
+        canonical: "Linkerd",
+    },
+    TerminologyRule {
+        pattern: "meta l b",
+        canonical: "MetalLB",
+    },
+    TerminologyRule {
+        pattern: "traefik mesh",
+        canonical: "Traefik Mesh",
+    },
+    // Spring Cloud / service discovery
+    TerminologyRule {
+        pattern: "spring cloud gateway",
+        canonical: "Spring Cloud Gateway",
+    },
+    TerminologyRule {
+        pattern: "spring cloud load balancer",
+        canonical: "Spring Cloud LoadBalancer",
+    },
+    TerminologyRule {
+        pattern: "open feign",
+        canonical: "OpenFeign",
+    },
+    TerminologyRule {
+        pattern: "open feign client",
+        canonical: "OpenFeign",
+    },
+    TerminologyRule {
+        pattern: "resilience four j",
+        canonical: "Resilience4j",
+    },
+    TerminologyRule {
+        pattern: "spring cloud config",
+        canonical: "Spring Cloud Config",
+    },
+    TerminologyRule {
+        pattern: "spring cloud bus",
+        canonical: "Spring Cloud Bus",
+    },
+    TerminologyRule {
+        pattern: "spring cloud stream",
+        canonical: "Spring Cloud Stream",
+    },
+    TerminologyRule {
+        pattern: "spring cloud sleuth",
+        canonical: "Spring Cloud Sleuth",
+    },
+    TerminologyRule {
+        pattern: "spring cloud consul",
+        canonical: "Spring Cloud Consul",
+    },
+    TerminologyRule {
+        pattern: "spring cloud zookeeper",
+        canonical: "Spring Cloud Zookeeper",
+    },
+    TerminologyRule {
+        pattern: "apollo config",
+        canonical: "Apollo",
+    },
+    TerminologyRule {
+        pattern: "configuration center",
+        canonical: "configuration center",
+    },
+    TerminologyRule {
+        pattern: "dubbo admin",
+        canonical: "Dubbo Admin",
+    },
+    TerminologyRule {
+        pattern: "sentinel dashboard",
+        canonical: "Sentinel Dashboard",
+    },
+    TerminologyRule {
+        pattern: "seata server",
+        canonical: "Seata Server",
+    },
+    // Netflix / streaming stack
+    TerminologyRule {
+        pattern: "netflix eureka",
+        canonical: "Netflix Eureka",
+    },
+    TerminologyRule {
+        pattern: "netflix zuul",
+        canonical: "Netflix Zuul",
+    },
+    TerminologyRule {
+        pattern: "netflix hystrix",
+        canonical: "Netflix Hystrix",
+    },
+    TerminologyRule {
+        pattern: "zuul gateway",
+        canonical: "Zuul",
+    },
+    TerminologyRule {
+        pattern: "ribbon client",
+        canonical: "Ribbon",
+    },
+    // Observability additions
+    TerminologyRule {
+        pattern: "open telemetry collector",
+        canonical: "OpenTelemetry Collector",
+    },
+    TerminologyRule {
+        pattern: "otel collector",
+        canonical: "OTel Collector",
+    },
+    TerminologyRule {
+        pattern: "tempo tracing",
+        canonical: "Tempo",
+    },
+    TerminologyRule {
+        pattern: "mimir metrics",
+        canonical: "Mimir",
+    },
+    TerminologyRule {
+        pattern: "victoria metrics",
+        canonical: "VictoriaMetrics",
+    },
+    TerminologyRule {
+        pattern: "influx telegraf",
+        canonical: "Telegraf",
+    },
+    TerminologyRule {
+        pattern: "loki promtail",
+        canonical: "Promtail",
+    },
+    TerminologyRule {
+        pattern: "sky walking",
+        canonical: "SkyWalking",
+    },
+    TerminologyRule {
+        pattern: "pin point",
+        canonical: "Pinpoint",
+    },
+    TerminologyRule {
+        pattern: "elastic a p m",
+        canonical: "Elastic APM",
+    },
+    TerminologyRule {
+        pattern: "sentry d s n",
+        canonical: "Sentry DSN",
+    },
+    // Message queues / streaming additions
+    TerminologyRule {
+        pattern: "rocket m q",
+        canonical: "RocketMQ",
+    },
+    TerminologyRule {
+        pattern: "apache rocketmq",
+        canonical: "RocketMQ",
+    },
+    TerminologyRule {
+        pattern: "active m q",
+        canonical: "ActiveMQ",
+    },
+    TerminologyRule {
+        pattern: "apache pulsar",
+        canonical: "Pulsar",
+    },
+    TerminologyRule {
+        pattern: "red is stream",
+        canonical: "Redis Stream",
+    },
+    TerminologyRule {
+        pattern: "beats filebeat",
+        canonical: "Filebeat",
+    },
+    TerminologyRule {
+        pattern: "log stash",
+        canonical: "Logstash",
+    },
+    // Storage / cache additions
+    TerminologyRule {
+        pattern: "min io gateway",
+        canonical: "MinIO Gateway",
+    },
+    TerminologyRule {
+        pattern: "rust f s cluster",
+        canonical: "RustFS Cluster",
+    },
+    TerminologyRule {
+        pattern: "ceph rados",
+        canonical: "Ceph RADOS",
+    },
+    TerminologyRule {
+        pattern: "gluster f s",
+        canonical: "GlusterFS",
+    },
+    TerminologyRule {
+        pattern: "n f s mount",
+        canonical: "NFS",
+    },
+    TerminologyRule {
+        pattern: "juice f s",
+        canonical: "JuiceFS",
+    },
+    TerminologyRule {
+        pattern: "mem cached",
+        canonical: "Memcached",
+    },
+    TerminologyRule {
+        pattern: "red is cluster",
+        canonical: "Redis Cluster",
+    },
+    TerminologyRule {
+        pattern: "red is sentinel",
+        canonical: "Redis Sentinel",
+    },
+    TerminologyRule {
+        pattern: "elastic cache",
+        canonical: "ElastiCache",
+    },
+    // API / gateway / auth additions
+    TerminologyRule {
+        pattern: "open api spec",
+        canonical: "OpenAPI Spec",
+    },
+    TerminologyRule {
+        pattern: "swagger u i",
+        canonical: "Swagger UI",
+    },
+    TerminologyRule {
+        pattern: "post man collection",
+        canonical: "Postman Collection",
+    },
+    TerminologyRule {
+        pattern: "g r a f a n a",
+        canonical: "Grafana",
+    },
+    TerminologyRule {
+        pattern: "key cloack",
+        canonical: "Keycloak",
+    },
+    TerminologyRule {
+        pattern: "auth two",
+        canonical: "Auth2",
+    },
+    TerminologyRule {
+        pattern: "single sign on",
+        canonical: "single sign-on",
+    },
+    TerminologyRule {
+        pattern: "role based access control",
+        canonical: "RBAC",
+    },
+    TerminologyRule {
+        pattern: "attribute based access control",
+        canonical: "ABAC",
+    },
+    TerminologyRule {
+        pattern: "zero trust",
+        canonical: "zero trust",
+    },
+    TerminologyRule {
+        pattern: "service account",
+        canonical: "service account",
+    },
+    // Build / packaging additions
+    TerminologyRule {
+        pattern: "vite config",
+        canonical: "vite.config",
+    },
+    TerminologyRule {
+        pattern: "web pack config",
+        canonical: "webpack.config",
+    },
+    TerminologyRule {
+        pattern: "es lint",
+        canonical: "ESLint",
+    },
+    TerminologyRule {
+        pattern: "es lint config",
+        canonical: "ESLint Config",
+    },
+    TerminologyRule {
+        pattern: "prettier config",
+        canonical: "prettier.config",
+    },
+    TerminologyRule {
+        pattern: "p n p m workspace",
+        canonical: "pnpm workspace",
+    },
+    TerminologyRule {
+        pattern: "bun runtime",
+        canonical: "Bun",
+    },
+    TerminologyRule {
+        pattern: "turbo repo",
+        canonical: "Turborepo",
+    },
+    TerminologyRule {
+        pattern: "turbo repo pipeline",
+        canonical: "Turborepo",
+    },
+    TerminologyRule {
+        pattern: "nx workspace",
+        canonical: "Nx",
+    },
+    // Containers / orchestration additions
+    TerminologyRule {
+        pattern: "kube sphere",
+        canonical: "KubeSphere",
+    },
+    TerminologyRule {
+        pattern: "k three s",
+        canonical: "K3s",
+    },
+    TerminologyRule {
+        pattern: "k 3 s",
+        canonical: "K3s",
+    },
+    TerminologyRule {
+        pattern: "k eight s",
+        canonical: "K8s",
+    },
+    TerminologyRule {
+        pattern: "k 8 s",
+        canonical: "K8s",
+    },
+    TerminologyRule {
+        pattern: "openshift cluster",
+        canonical: "OpenShift",
+    },
+    TerminologyRule {
+        pattern: "rancher desktop",
+        canonical: "Rancher Desktop",
+    },
+    TerminologyRule {
+        pattern: "docker swarm",
+        canonical: "Docker Swarm",
+    },
+    TerminologyRule {
+        pattern: "pod man desktop",
+        canonical: "Podman Desktop",
+    },
+    TerminologyRule {
+        pattern: "helm release",
+        canonical: "Helm Release",
+    },
+    // AI / LLM additions
+    TerminologyRule {
+        pattern: "lang graph",
+        canonical: "LangGraph",
+    },
+    TerminologyRule {
+        pattern: "lang smith",
+        canonical: "LangSmith",
+    },
+    TerminologyRule {
+        pattern: "llama c p p",
+        canonical: "llama.cpp",
+    },
+    TerminologyRule {
+        pattern: "v l l m",
+        canonical: "vLLM",
+    },
+    TerminologyRule {
+        pattern: "ol lama",
+        canonical: "Ollama",
+    },
+    TerminologyRule {
+        pattern: "oh lama",
+        canonical: "Ollama",
+    },
+    TerminologyRule {
+        pattern: "deep speed",
+        canonical: "DeepSpeed",
+    },
+    TerminologyRule {
+        pattern: "x infer",
+        canonical: "xInfer",
+    },
+    TerminologyRule {
+        pattern: "pine cone",
+        canonical: "Pinecone",
+    },
+    TerminologyRule {
+        pattern: "mil vus",
+        canonical: "Milvus",
+    },
+    TerminologyRule {
+        pattern: "weav i ate",
+        canonical: "Weaviate",
+    },
+    TerminologyRule {
+        pattern: "chroma d b",
+        canonical: "Chroma",
+    },
+    TerminologyRule {
+        pattern: "vector store",
+        canonical: "vector store",
+    },
+    TerminologyRule {
+        pattern: "re ranker",
+        canonical: "reranker",
+    },
+    // Single-word names whose casing matters.
+    //
+    // The table normally refuses single-word patterns because replacing an
+    // ordinary word corrupts prose. These are listed individually because
+    // they are not ordinary English nouns and only need their casing fixed.
+    TerminologyRule {
+        pattern: "nacos",
+        canonical: "Nacos",
+    },
+    TerminologyRule {
+        pattern: "netbird",
+        canonical: "NetBird",
+    },
+    TerminologyRule {
+        pattern: "cilium",
+        canonical: "Cilium",
+    },
+    TerminologyRule {
+        pattern: "metallb",
+        canonical: "MetalLB",
+    },
+    TerminologyRule {
+        pattern: "headscale",
+        canonical: "Headscale",
+    },
+    TerminologyRule {
+        pattern: "netmaker",
+        canonical: "Netmaker",
+    },
+    TerminologyRule {
+        pattern: "tailscale",
+        canonical: "Tailscale",
+    },
+    TerminologyRule {
+        pattern: "zerotier",
+        canonical: "ZeroTier",
+    },
+    TerminologyRule {
+        pattern: "openvpn",
+        canonical: "OpenVPN",
+    },
+    TerminologyRule {
+        pattern: "coredns",
+        canonical: "CoreDNS",
+    },
+    TerminologyRule {
+        pattern: "apisix",
+        canonical: "APISIX",
+    },
+    TerminologyRule {
+        pattern: "traefik",
+        canonical: "Traefik",
+    },
+    TerminologyRule {
+        pattern: "linkerd",
+        canonical: "Linkerd",
+    },
+    TerminologyRule {
+        pattern: "istio",
+        canonical: "Istio",
+    },
+    TerminologyRule {
+        pattern: "kubesphere",
+        canonical: "KubeSphere",
+    },
+    TerminologyRule {
+        pattern: "containerd",
+        canonical: "containerd",
+    },
+    TerminologyRule {
+        pattern: "rocketmq",
+        canonical: "RocketMQ",
+    },
+    TerminologyRule {
+        pattern: "activemq",
+        canonical: "ActiveMQ",
+    },
+    TerminologyRule {
+        pattern: "skywalking",
+        canonical: "SkyWalking",
+    },
+    TerminologyRule {
+        pattern: "victoriametrics",
+        canonical: "VictoriaMetrics",
+    },
+    TerminologyRule {
+        pattern: "pinpoint",
+        canonical: "Pinpoint",
+    },
+    TerminologyRule {
+        pattern: "logstash",
+        canonical: "Logstash",
+    },
+    TerminologyRule {
+        pattern: "filebeat",
+        canonical: "Filebeat",
+    },
+    TerminologyRule {
+        pattern: "memcached",
+        canonical: "Memcached",
+    },
+    TerminologyRule {
+        pattern: "kinesis",
+        canonical: "Kinesis",
+    },
+    TerminologyRule {
+        pattern: "juicefs",
+        canonical: "JuiceFS",
+    },
+    TerminologyRule {
+        pattern: "alluxio",
+        canonical: "Alluxio",
+    },
+    TerminologyRule {
+        pattern: "glusterfs",
+        canonical: "GlusterFS",
+    },
+    TerminologyRule {
+        pattern: "opensearch",
+        canonical: "OpenSearch",
+    },
+    TerminologyRule {
+        pattern: "clickhouse",
+        canonical: "ClickHouse",
+    },
+    TerminologyRule {
+        pattern: "influxdb",
+        canonical: "InfluxDB",
+    },
+    TerminologyRule {
+        pattern: "cockroachdb",
+        canonical: "CockroachDB",
+    },
+    TerminologyRule {
+        pattern: "mongodb",
+        canonical: "MongoDB",
+    },
+    TerminologyRule {
+        pattern: "mariadb",
+        canonical: "MariaDB",
+    },
+    TerminologyRule {
+        pattern: "postgresql",
+        canonical: "PostgreSQL",
+    },
+    TerminologyRule {
+        pattern: "rabbitmq",
+        canonical: "RabbitMQ",
+    },
+    TerminologyRule {
+        pattern: "zookeeper",
+        canonical: "ZooKeeper",
+    },
+    TerminologyRule {
+        pattern: "mybatis",
+        canonical: "MyBatis",
+    },
+    TerminologyRule {
+        pattern: "micronaut",
+        canonical: "Micronaut",
+    },
+    TerminologyRule {
+        pattern: "quarkus",
+        canonical: "Quarkus",
+    },
+    TerminologyRule {
+        pattern: "starship",
+        canonical: "Starship",
+    },
+    TerminologyRule {
+        pattern: "langgraph",
+        canonical: "LangGraph",
+    },
+    TerminologyRule {
+        pattern: "langsmith",
+        canonical: "LangSmith",
+    },
+    TerminologyRule {
+        pattern: "milvus",
+        canonical: "Milvus",
+    },
+    TerminologyRule {
+        pattern: "weaviate",
+        canonical: "Weaviate",
+    },
+    TerminologyRule {
+        pattern: "qdrant",
+        canonical: "Qdrant",
+    },
+    TerminologyRule {
+        pattern: "pinecone",
+        canonical: "Pinecone",
+    },
+    TerminologyRule {
+        pattern: "faiss",
+        canonical: "FAISS",
+    },
+    TerminologyRule {
+        pattern: "deepspeed",
+        canonical: "DeepSpeed",
+    },
+    TerminologyRule {
+        pattern: "vllm",
+        canonical: "vLLM",
+    },
+    TerminologyRule {
+        pattern: "deno",
+        canonical: "Deno",
+    },
+    TerminologyRule {
+        pattern: "turborepo",
+        canonical: "Turborepo",
+    },
+    TerminologyRule {
+        pattern: "changesets",
+        canonical: "Changesets",
+    },
+    TerminologyRule {
+        pattern: "lerna",
+        canonical: "Lerna",
+    },
+    TerminologyRule {
+        pattern: "eslint",
+        canonical: "ESLint",
+    },
 ];
 
 const MAX_DETERMINISTIC_CORRECTIONS: usize = 100;
@@ -1594,5 +2309,36 @@ mod tests {
             "看 Spark 的任务"
         );
         assert_eq!(apply_terminology("接 s q l server"), "接 SQL Server");
+    }
+    #[test]
+    fn service_mesh_and_vpn_names_are_corrected() {
+        assert_eq!(apply_terminology("nacos 做注册中心"), "Nacos 做注册中心");
+        assert_eq!(apply_terminology("用 net bird 组网"), "用 NetBird 组网");
+        assert_eq!(
+            apply_terminology("net bird cloud 已经开了"),
+            "NetBird Cloud 已经开了"
+        );
+        assert_eq!(apply_terminology("tail scale 打洞"), "Tailscale 打洞");
+        assert_eq!(apply_terminology("用 k eight s 部署"), "用 K8s 部署");
+        assert_eq!(apply_terminology("side car 模式"), "sidecar 模式");
+    }
+
+    #[test]
+    fn english_words_that_are_also_products_stay_untouched() {
+        // calico/flannel are fabrics, consul/envoy are diplomats, hibernate is a
+        // verb. A single-word rule for any of them would rewrite normal prose.
+        for sentence in [
+            "the calico cat slept",
+            "a flannel shirt",
+            "the consul arrived",
+            "an envoy was sent",
+            "bears hibernate in winter",
+        ] {
+            assert_eq!(
+                apply_terminology(sentence),
+                sentence,
+                "corrupted: {sentence}"
+            );
+        }
     }
 }
