@@ -119,7 +119,7 @@ Linux 暂时保持 `Ctrl+/` 和 `Ctrl+.` 作为默认热键，因为不同桌面
 | macOS | Apple Silicon 和 Intel 通用 `.dmg` |
 | Linux | `.AppImage` / `.deb` |
 
-版本号采用日期式格式：`1.0.YYYYMMDD`（例如 `1.0.20261120`）。
+版本号采用日期式格式：`1.0.YYYYMMDD`（例如 `1.0.20261121`）。
 
 ## 安装说明
 
@@ -161,14 +161,14 @@ xattr -dr com.apple.quarantine /Applications/TalkWithYourAI.app
 **Ubuntu/Debian** 安装 `.deb`：
 
 ```bash
-sudo apt install ./TalkWithYourAI_1.0.20261120_amd64.deb
+sudo apt install ./TalkWithYourAI_1.0.20261121_amd64.deb
 ```
 
 **AppImage** 直接运行：
 
 ```bash
-chmod +x TalkWithYourAI_1.0.20261120_amd64.AppImage
-./TalkWithYourAI_1.0.20261120_amd64.AppImage
+chmod +x TalkWithYourAI_1.0.20261121_amd64.AppImage
+./TalkWithYourAI_1.0.20261121_amd64.AppImage
 ```
 
 **NVIDIA + Wayland 用户：**应用会自动识别并应用兼容处理。如果仍然启动崩溃，可以尝试：
