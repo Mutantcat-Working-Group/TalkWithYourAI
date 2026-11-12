@@ -4567,7 +4567,7 @@ dependencies = [
 
 [[package]]
 name = "talkwithyourai"
-version = "1.0.20261121"
+version = "1.0.20261122"
 dependencies = [
  "anyhow",
  "arboard",

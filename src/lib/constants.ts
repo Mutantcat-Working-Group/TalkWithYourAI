@@ -13,7 +13,7 @@ export const UI_LANGUAGES = [
 ] as const
 
 export const APP_NAME = 'TalkWithYourAI'
-export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.0.20261121'
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? 'v1.0.20261122'
 export const APP_REPO_URL = 'https://github.com/Mutantcat-Working-Group/TalkWithYourAI'
 export const APP_LICENSE_URL =
   'https://github.com/Mutantcat-Working-Group/TalkWithYourAI/blob/main/LICENSE'
