@@ -1,388 +1,221 @@
-<p align="center">
-  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="TalkWithYourAI Logo" />
-</p>
+<div align=center>
+<img src="src-tauri/icons/128x128@2x.png" style="width:100px;" width="100"/>
+<h2>TalkWithYourAI</h2>
+</div>
 
-<h1 align="center">TalkWithYourAI</h1>
+### 1. Overview
 
-<p align="center">
-  Open-source alternative to Wispr Flow and Superwhisper for AI voice input, rewriting, and voice Q&A on macOS, Windows, and Linux.
-</p>
+- A lightweight desktop voice-input tool: press the hotkey, speak, and get polished text dropped straight into whatever app you were already using.
+- Fully local: no account, no backend service, no license check, no telemetry. Speech recognition and AI polish only talk to the providers you configure.
+- Bring your own key: both speech recognition and AI polish accept your own key, and your own base URL for self-hosted or local models.
+- Ships for macOS, Windows and Linux, with dual-architecture installers on macOS and Windows.
 
-<p align="center">
-  Press a hotkey, speak naturally, and get clean text in the app you are already using.<br/>
-  Or ask a one-shot voice question and get a concise AI answer without opening a chat app.
-</p>
+Why it exists:
 
-<p align="center">
-  <a href="https://github.com/Mutantcat-Working-Group/TalkWithYourAI/actions/workflows/ci.yml"><img src="https://github.com/Mutantcat-Working-Group/TalkWithYourAI/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Mutantcat-Working-Group/TalkWithYourAI" alt="License" /></a>
-</p>
+- Speak naturally, get written text. Thinking-aloud fillers (um, uh, you know, 呃, 嗯, 就是) are removed, punctuation added, and the result is ready to send.
+- It knows where you are typing. The active app is classified as email, work chat, document, code surface, terminal and so on, and the tone and layout follow.
+- It knows what you are saying. Around 450 built-in developer-term corrections turn `code x` into `Codex` and `min io` into `MinIO`.
+- Configure once, use indefinitely. All data lives in a local SQLite file; the keys are yours to change.
 
-<p align="center">
-  <a href="https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases"><strong>Download</strong></a> ·
-  <a href="#getting-started"><strong>Run locally</strong></a> ·
-  <a href="#community"><strong>Issues</strong></a>
-</p>
+### 2. Features
 
-<p align="center">
-  <strong>Dictate anywhere</strong> · <strong>Rewrite selected text</strong> · <strong>Ask one-shot voice questions</strong> · <strong>Bring your own keys</strong>
-</p>
+#### Voice input
 
-> **Fork notice:** TalkWithYourAI is based on [tover0314-w/opentypeless](https://github.com/tover0314-w/opentypeless), which is MIT licensed. This fork is local-only: the account, subscription, and managed-cloud layer has been removed, so the app runs without sign-in, without a backend service, and with only the API keys you configure yourself. See `LICENSE` and `THIRD_PARTY_NOTICES.md` for the retained upstream attribution.
->
-> The upstream multilingual READMEs (Japanese, Korean, Spanish, French, German, Portuguese, Russian, Arabic, Hindi, Italian, Turkish, Vietnamese, Thai, Indonesian, Polish, Dutch) were removed along with the upstream content they documented. Only this file and [README_zh.md](README_zh.md) are maintained.
+- Global hotkey recording, either hold-to-talk or press-to-start/stop.
+- A floating capsule shows the recording, transcribing, polishing and output stages.
+- Text is typed character by character via keyboard simulation, or pasted through the clipboard; both can act as a fallback.
+- The recording limit follows the selected provider automatically and can also be set by hand.
 
-## Product Highlights
+#### AI polish
 
-TalkWithYourAI understands more of the workflow around your voice, not only the words you said:
+- The transcript is cleaned by an LLM: punctuation added, fillers removed, repetitions merged, self-corrections resolved.
+- Four built-in polish styles (Minimal, Clean, Structured, Professional), plus your own custom style prompt.
+- Long input (roughly 120 CJK characters or 45 words) covering several points is turned into a bulleted list.
+- Context-aware typo fixing: `函树` becomes `函数` in a code editor, while an email is judged against business vocabulary.
+- A failed polish no longer degrades silently: you are asked whether to retry (unlimited) or insert the raw transcript.
 
-- **App-aware writing** detects the active application locally and adapts structure and tone for email, chat, documents, issue trackers, coding tools, and more.
-- **Voice intent routing** distinguishes dictation, selected-text editing, translation, Ask Anything, and supported voice actions in English, Simplified Chinese, and Traditional Chinese.
-- **Multiple shortcuts per workflow** let you assign and reorder more than one binding for Dictation, Ask Anything, and Translation.
-- **Switchable translation targets** make it faster to move between the languages you use instead of keeping one fixed output language.
-- **A stronger local dictionary** adds correction rules plus dictionary import/export, so recurring names, terminology, and transcription mistakes stay under your control.
-- **Per-app style mappings** let you override the built-in app category when a detected app needs a different writing style.
+#### App awareness
 
-All application detection, mappings, dictionary entries, correction rules, history, and scenes are stored locally in SQLite on your machine. App-aware polish sends only the internal app category and approved style metadata to the configured LLM path; raw window titles and document contents are not sent to the LLM or stored in history.
+- The foreground app is classified into email, work chat, personal chat, document, project management, developer collaboration, prompt/code, support, social, or terminal.
+- Each app family can carry its own writing style, and a specific app can override it.
+- Classification and mappings are local; only the internal category label is sent to the LLM, never window titles or document contents.
 
-## Ask Anything
+#### Terminal handling
 
-Ask Anything is a shortcut-first voice Q&A flow, not a chat tab. Press the Ask Anything hotkey, speak a question, stop recording, and TalkWithYourAI transcribes it, sends a one-shot request to the LLM, then shows only the final answer in a small floating note.
+- Terminal apps are recognised: Terminal, iTerm2, Warp, Ghostty, Alacritty, kitty, WezTerm, AntShell, Windows Terminal, PowerShell and friends.
+- In a terminal a newline is emitted as a backslash plus Enter (shell line continuation), so a command is not submitted mid-sentence.
+- Other apps are untouched: normal text still gets normal newlines.
 
-It is designed for quick answers with no chat history, no input box, and no extra send step. If selected-text context is enabled, Ask can also answer questions about the text currently selected in another app.
+#### Ask Anything
 
-Default shortcuts follow the Typeless-style flow:
+- A separate hotkey, a spoken question, and only the answer is shown: no chat history, no input box, no send button.
+- With text selected, you can also ask "what does this mean" or "summarise this".
 
-| Platform | Dictation | Ask Anything | Translate selected text |
-| -------- | --------- | ------------ | ----------------------- |
-| macOS    | `Fn`      | `Fn+Space`   | `Fn+LeftShift`          |
-| Windows  | `Right Alt` | `Right Alt+Space` | `Right Alt+LeftShift` |
-| Linux    | `Ctrl+/`  | `Ctrl+.`     | configurable            |
+#### Local data
 
-Linux keeps conservative Ctrl-based defaults because global Right Alt handling is less reliable across desktop environments, especially on Wayland.
+- History, dictionary, correction rules, scenes and app mappings all live in a local SQLite database with full-text search and date grouping.
+- The dictionary imports and exports JSON / CSV; scenes import and export JSON.
+- API keys are stored in the OS credential vault (macOS Keychain, Windows Credential Manager, Linux Secret Service) with an encrypted local fallback.
 
-## What TalkWithYourAI Does
+#### Supported providers
 
-TalkWithYourAI gives you four voice-first desktop workflows:
+Speech recognition:
 
-| Workflow              | What happens                                                                                                           |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Dictation             | Hold a hotkey, speak, transcribe, optionally polish with an LLM, then type or copy the result into the active app      |
-| Ask Anything          | Start a one-shot voice question, transcribe it, send it to the LLM, and show only the final answer in a small panel    |
-| Selected-text editing | Select text in another app, speak an instruction, and let the LLM rewrite, summarize, translate, or fix that selection |
-| Translation           | Use a dedicated shortcut, speak or select text, and send the result to one of your configured target languages         |
-
-Use it for emails, chat replies, meeting notes, issue comments, prompts, documentation drafts, quick answers, multilingual translation, and any workflow where speaking is faster than typing.
-
-```mermaid
-flowchart LR
-  Hotkey["Global hotkey"] --> Capture["Audio capture"]
-  Capture --> Mode{"Voice mode"}
-  Mode -->|"Dictation"| STT["Speech-to-text"]
-  STT --> Polish{"AI polish?"}
-  Polish -->|"Yes"| Context["Local app category + style mapping"]
-  Context --> LLM["Context-aware LLM rewrite"]
-  Polish -->|"No"| Output["Keyboard / clipboard output"]
-  LLM --> Output
-  Mode -->|"Ask Anything"| AskSTT["Transcribe question"]
-  AskSTT --> AskLLM["One-shot LLM answer"]
-  AskLLM --> Panel["Answer-only panel"]
-  Mode -->|"Selected text"| Selection["Capture selected text"]
-  Selection --> EditLLM["Apply spoken instruction"]
-  EditLLM --> Output
+```text
+Provider                      Notes
+Deepgram Nova-3              streaming
+AssemblyAI                   streaming
+Alibaba Qwen3 ASR Realtime   streaming, region selectable
+Volcengine Doubao ASR        streaming
+Zhipu GLM-ASR                file upload
+OpenAI Whisper               file upload
+Groq Whisper                 file upload
+SiliconFlow                  file upload
+Apple Speech                 on-device, macOS only
+Local / custom Whisper       your own base URL and model, key optional
 ```
 
-## Why TalkWithYourAI?
+AI polish:
 
-Most desktop dictation tools stop at transcription. TalkWithYourAI adds the AI rewrite layer, provider choice, and open-source control that power users need — with no account and no cloud layer to sign up for.
-
-|                        | TalkWithYourAI                                                       | macOS Dictation | Windows Voice Typing | Whisper Desktop |
-| ---------------------- | -------------------------------------------------------------------- | --------------- | -------------------- | --------------- |
-| AI text polishing      | ✅ Multiple LLMs                                                     | ❌              | ❌                   | ❌              |
-| Ask Anything voice Q&A | ✅                                                                   | ❌              | ❌                   | ❌              |
-| STT provider choice    | ✅ Deepgram, AssemblyAI, Whisper-compatible, Doubao, Apple Speech, and more | ❌ Apple only   | ❌ Microsoft only    | ❌ Whisper only |
-| Works in any app       | ✅                                                                   | ✅              | ✅                   | ❌ Copy-paste   |
-| Translation mode       | ✅                                                                   | ❌              | ❌                   | ❌              |
-| Selected-text rewrite  | ✅                                                                   | ❌              | ❌                   | ❌              |
-| App-aware writing      | ✅ Local detection and mappings                                      | ❌              | ❌                   | ❌              |
-| Multiple shortcuts     | ✅ Per voice workflow                                                 | ❌              | ❌                   | ❌              |
-| No account required    | ✅                                                                   | ✅              | ✅                   | ✅              |
-| Open source            | ✅ MIT                                                               | ❌              | ❌                   | ✅              |
-| Cross-platform         | ✅ Win/Mac/Linux                                                     | ❌ Mac only     | ❌ Windows only      | ✅              |
-| Custom dictionary      | ✅                                                                   | ❌              | ❌                   | ❌              |
-| Bring your own keys    | ✅ BYOK                                                              | ❌              | ❌                   | ✅              |
-
-## Features
-
-| Area              | Highlights                                                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| Voice capture     | Native Fn / Right Alt hotkeys on macOS/Windows, Linux Ctrl defaults, multiple bindings per workflow, hold or toggle mode, floating capsule states, idle auto-hide |
-| AI rewriting      | App-aware writing, local per-app style mappings, polish styles, streaming polish, selected-text context, and custom instructions             |
-| Ask Anything      | One-shot voice question flow: record in the capsule, think, then show a small answer note with copy support                                 |
-| Voice actions     | Deterministic English, Simplified Chinese, and Traditional Chinese routing for editing, translation, Ask, and supported actions              |
-| STT providers     | Apple Speech on macOS, Deepgram, AssemblyAI, GLM-ASR, OpenAI Whisper, Groq Whisper, SiliconFlow, Volcengine Doubao, custom/local endpoints |
-| LLM providers     | OpenAI-compatible APIs including OpenAI, DeepSeek, Claude via OpenRouter, Gemini, Groq, Qwen, Moonshot, Anthropic, Ollama, and more       |
-| Output            | Keyboard simulation, clipboard paste/copy-only, Windows SendInput, clipboard restore, and output-failure diagnostics                       |
-| Language          | Auto-detect speech, dedicated translation shortcut, switchable target languages, and 20+ translation targets                                |
-| Dictionary        | Custom terms, import/export, and local correction rules for recurring transcription mistakes                                                 |
-| Scenes            | Built-in scenes, local custom scenes, active scene metadata, import/export for reusable writing styles                                      |
-| Privacy           | Local app detection and mappings, provider keys in the OS credential vault where available, no telemetry, no account                      |
-| Desktop polish    | Dark/light/system theme, onboarding, local history search, auto-start, GitHub release notifications, cross-platform Tauri app                                |
-
-UI localization ships with complete English and Chinese copy, plus additional locale files that may still fall back to English for newer advanced features.
-
-## How The App Thinks
-
-```mermaid
-sequenceDiagram
-  participant User
-  participant Desktop as TalkWithYourAI Desktop
-  participant STT as STT Provider
-  participant LLM as LLM Provider
-  participant App as Active App
-
-  User->>Desktop: Hold dictation hotkey and speak
-  Desktop->>Desktop: Detect local app category and style
-  Desktop->>STT: Send audio with your own API key or local endpoint
-  STT-->>Desktop: Raw transcript
-  Desktop->>LLM: Optional context-aware polish / translate / rewrite
-  LLM-->>Desktop: Final text
-  Desktop->>App: Type or copy result
+```text
+Provider                      Notes
+Zhipu
+DeepSeek
+SiliconFlow
+OpenAI
+Google Gemini
+Moonshot (Kimi)
+Doubao (Volcengine)
+Qwen
+Groq
+Claude                       native Messages API
+Ollama                       local, no key
+OpenRouter
+Custom OpenAI-compatible     your own base URL and model, key optional
 ```
 
-> [!TIP]
-> **Recommended Configuration for Best Experience**
->
-> |              | Provider | Model                    |
-> | ------------ | -------- | ------------------------ |
-> | 🗣️ STT       | Groq     | `whisper-large-v3-turbo` |
-> | 🤖 AI Polish | Google   | `gemini-2.5-flash`       |
->
-> This combo delivers fast, accurate transcription with high-quality text polishing — and both offer generous free tiers.
+### 3. Download and install
 
-## Try It in 5 Minutes
+Download the installer for your platform from [Releases](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases):
 
-1. Download the latest build for your platform from [Releases](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases).
-2. Open the app — there is no sign-in step; go straight to Settings.
-3. Pick speech recognition and AI polish providers and enter your own API keys.
-4. Set one or more shortcuts for Dictation, Ask Anything, and Translation.
-5. Open any desktop app, press the hotkey, speak, and let TalkWithYourAI type the polished result.
-
-## Download
-
-Download the latest version for your platform:
-
-**[Download the latest release](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases/latest)**
-
-| Platform | File                                         |
-| -------- | -------------------------------------------- |
-| Windows  | NSIS `.exe` installer                        |
-| macOS    | Universal `.dmg` for Apple Silicon and Intel |
-| Linux    | `.AppImage` / `.deb`                         |
-
-Release versions use a date-based scheme: `1.0.YYYYMMDD` (for example `1.0.20261121`).
-
-## Installation Notes
-
-Release builds are produced by [`.github/workflows/release.yml`](.github/workflows/release.yml). Always download from this repository's [GitHub Releases](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases) page.
-
-macOS builds are **ad-hoc signed**, not Developer-ID signed and not notarized. Gatekeeper will still warn on first launch — right-click the app and choose **Open**, or run `xattr -dr com.apple.quarantine /Applications/TalkWithYourAI.app`.
-
-**There is no signed auto-update.** The macOS build is ad-hoc signed and this project has no maintainer signing key, so an update payload could never be verified. Instead the app asks the public GitHub Releases API whether a newer tag exists and shows a notice with a link to the release page; you download and install the new version yourself. Nothing is downloaded or executed automatically.
-
-### Windows
-
-Windows SmartScreen may show "Windows protected your PC":
-
-1. Click **More info**
-2. Click **Run anyway**
-
-If the installer shows a publisher validation warning:
-
-1. Right-click the `.msi` file → **Properties**
-2. Check **Unblock** at the bottom → **Apply**
-3. Run the installer again
-
-### macOS
-
-macOS builds are Developer ID signed. If Gatekeeper still blocks first launch while notarization/stapling catches up, remove the quarantine attribute:
-
-```bash
-xattr -cr /Applications/TalkWithYourAI.app
+```text
+Platform   Arch            File
+macOS      arm64 + x86_64  TalkWithYourAI_<version>_universal.dmg
+Windows    x64             TalkWithYourAI_<version>_x64-setup.exe
+Windows    arm64           TalkWithYourAI_<version>_arm64-setup.exe
+Linux      amd64           TalkWithYourAI_<version>_amd64.deb
+Linux      arm64           TalkWithYourAI_<version>_arm64.deb
+Linux      amd64           TalkWithYourAI_<version>_amd64.AppImage
 ```
 
-Then open the app normally.
+Every installer has a matching `<file>.checksums.txt` containing both an MD5 and a SHA-1 digest, plus aggregate `MD5SUMS` and `SHA1SUMS` files that work directly with `md5sum -c` / `sha1sum -c`.
 
-### Linux
+The macOS build is ad-hoc signed and not notarized, so Gatekeeper blocks it on first launch. Right-click the app and choose Open, or run:
 
-**Ubuntu/Debian** — install the `.deb` package:
-
-```bash
-sudo apt install ./TalkWithYourAI_1.0.20261121_amd64.deb
+```sh
+xattr -dr com.apple.quarantine /Applications/TalkWithYourAI.app
 ```
 
-**AppImage** — make it executable and run:
+The Windows installer is not code-signed; SmartScreen may warn. Click "More info", then "Run anyway".
 
-```bash
-chmod +x TalkWithYourAI_1.0.20261121_amd64.AppImage
-./TalkWithYourAI_1.0.20261121_amd64.AppImage
+### 4. Getting started
+
+#### Default shortcuts
+
+```text
+Platform   Dictation     Ask Anything     Translate selection
+macOS      Fn            Fn+Space         Fn+LeftShift
+Windows    Right Alt     Right Alt+Space  Right Alt+LeftShift
+Linux      Ctrl+/        Ctrl+.           configurable in Settings
 ```
 
-**NVIDIA + Wayland users:** The app auto-detects this configuration and applies a workaround. If it still crashes on startup, run:
+Cancel the current dictation, including while a polish-retry prompt is waiting: `Cmd+Escape` on macOS, `Ctrl+Escape` elsewhere.
 
-```bash
-WEBKIT_DISABLE_DMABUF_RENDERER=1 ./TalkWithYourAI
-```
+#### First-run setup
 
-The bundled Linux workarounds can also be forced with these environment variables. The `TALKWITHYOURAI_*` names are preferred; the older `OPENTYPELESS_*` names are still read as upstream compatibility aliases:
+1. Open the app and follow onboarding: pick a speech-recognition provider and enter its key (or a base URL for local Whisper).
+2. Pick an AI-polish provider and enter its key (Ollama and custom endpoints may leave it empty).
+3. Onboarding requires both connection tests to pass before continuing.
+4. Grant microphone access; on macOS you must also tick the app under Privacy & Security → Accessibility, otherwise global hotkeys and keyboard output will not work.
+5. Press the hotkey and start dictating.
 
-| Preferred name | Compatibility alias |
-| -------------- | ------------------- |
-| `TALKWITHYOURAI_DISABLE_WEBKIT_DMABUF` | `OPENTYPELESS_DISABLE_WEBKIT_DMABUF` |
-| `TALKWITHYOURAI_DISABLE_WEBKIT_COMPOSITING` | `OPENTYPELESS_DISABLE_WEBKIT_COMPOSITING` |
-| `TALKWITHYOURAI_FORCE_GDK_X11` | `OPENTYPELESS_FORCE_GDK_X11` |
-| `TALKWITHYOURAI_FORCE_SOFTWARE_GL` | `OPENTYPELESS_FORCE_SOFTWARE_GL` |
+#### Notes
 
-**Wayland users:** the required helper depends on the compositor:
+- No sign-up, sign-in or online check happens on first launch.
+- With AI polish disabled you get the punctuated raw transcript.
+- Ollama and custom OpenAI-compatible endpoints need no key, only a correct base URL and model.
+- Self-hosted OpenAI-compatible services may use plain `http://`; `localhost`, `127.0.0.1` and private LAN addresses are all allowed.
 
-- KDE Plasma/KWin Wayland uses [`kwtype`](https://github.com/Sporif/KWtype), which must currently be built and installed using the upstream instructions.
-- Other Wayland compositors use `wtype`. On Ubuntu/Debian run `sudo apt install wtype`; on Arch/Manjaro run `sudo pacman -S wtype`.
+#### Demo
 
-Global hotkeys can still depend on the desktop environment. If the matching helper is unavailable or fails, TalkWithYourAI keeps the result in the clipboard instead of running an untrusted user script.
-
-## Prerequisites
-
-- [Node.js](https://nodejs.org/) 20+
-- [Rust](https://rustup.rs/) (stable toolchain)
-- Platform-specific dependencies for Tauri: see [Tauri Prerequisites](https://v2.tauri.app/start/prerequisites/)
-
-## Getting Started
-
-```bash
-# Install dependencies
+```sh
+# Run from source (development)
 npm install
-
-# Run in development mode
 npm run tauri dev
 
-# Build for production
+# Build a local installer
 npm run tauri build
 ```
 
-The built application will be in `src-tauri/target/release/bundle/`.
+Bundles land in `src-tauri/target/release/bundle/`.
 
-## Configuration
+### 5. Configuration and data
 
-All settings are accessible from the in-app Settings panel:
+#### Where things live
 
-- **Speech Recognition** — choose STT provider and enter your API key, base URL, and model
-- **AI Polish** — choose an LLM provider and model, enable app-aware writing, manage per-app style mappings, and configure selected-text context
-- **General** — manage multiple Dictation, Ask Anything, and Translation shortcuts, output mode, auto-start, and idle capsule visibility
-- **Dictionary** — add or import custom terms, export your dictionary, and create local correction rules for recurring transcription mistakes
-- **Scenes** — built-in and local prompt templates with import/export for reusable writing styles
-- **About** — version, repository, and license information
-
-API keys are stored locally in the OS credential vault where available, with a local fallback for unsupported environments. Keys are never sent anywhere except the provider you configure — STT/LLM requests go directly from your machine to that provider.
-
-### Local only
-
-TalkWithYourAI has no accounts, no subscriptions, and no managed cloud. Everything runs on your machine:
-
-1. Choose any STT and LLM provider in Settings
-2. Enter your own API keys (or point at a local endpoint such as Ollama or a self-hosted Whisper server)
-3. That's it — history, dictionaries, correction rules, scenes, and app mappings are stored in a local SQLite database, and no request goes anywhere except the providers you chose
-
-If you want to run without any network connection at all, use a local Whisper-compatible STT endpoint together with a local OpenAI-compatible LLM such as Ollama.
-
-## Migrating From A Previous Installation
-
-The bundle identifier, product name, keyring service name, and database filename all changed compared with the app this fork is based on, so the two are independent applications. Nothing is inherited automatically, and both can be installed side by side.
-
-To bring your data across:
-
-- **History, dictionary, scenes:** copy the old SQLite database file from the previous app's data directory into the new app's data directory, and rename it to the new database filename (`talkwithyourai.db`). Dictionaries and scenes can also be exported and re-imported from the app.
-- **Settings:** `tauri-plugin-store` also keeps a `settings.json` in the same data directory (app config, window geometry, and the `onboarding_completed` flag). Copy it across too, or accept running through onboarding again and losing the saved window position.
-- **API keys:** keys are stored in the OS keyring under the app's service name, which changed. Enter your API keys again in the new app — they do not follow automatically.
-
-## Architecture
-
-**Desktop pipeline:**
-
-```mermaid
-flowchart TB
-  UI["React + TypeScript UI"] --> Tauri["Tauri commands"]
-  Hotkeys["Global shortcuts"] --> Tauri
-  Tauri --> Audio["Rust audio capture"]
-  Audio --> Providers["STT providers"]
-  Providers --> Pipeline["Pipeline orchestration"]
-  Pipeline --> LLMs["LLM providers"]
-  Pipeline --> Storage["SQLite history + dictionary"]
-  Pipeline --> Output["Keyboard / clipboard output"]
-  Updater["Updater"] --> UI
+```text
+Content                              Location
+history / dictionary / corrections    talkwithyourai.db in the app data dir
+window and other preferences          settings.json in the app data dir
+API keys                              OS credential vault, service name TalkWithYourAI
 ```
 
-```
-src/                  # React frontend (TypeScript)
-├── components/       # UI components (Settings, History, Capsule, etc.)
-├── hooks/            # React hooks (recording, theme, Tauri events)
-├── lib/              # Utilities (provider clients, router, constants)
-└── stores/           # Zustand state management
+#### Migrating from a previous install
 
-src-tauri/src/        # Rust backend
-├── audio/            # Audio capture via cpal
-├── stt/              # STT providers (Deepgram, AssemblyAI, Whisper-compat, Apple Speech)
-├── llm/              # LLM providers (OpenAI-compat and native)
-├── output/           # Text output (keyboard simulation, clipboard paste)
-├── storage/          # Config (tauri-plugin-store) + history/dictionary (SQLite)
-├── app_detector/     # Detect active application for context
-├── pipeline.rs       # Recording → STT → LLM → Output orchestration
-└── lib.rs            # Tauri app setup, commands, hotkey handling
-```
+This app uses a different bundle identifier, keyring service name and database filename than upstream OpenTypeless. They are two independent applications that can be installed side by side, so old data is not inherited automatically:
 
-## Roadmap
+- History / dictionary / scenes: copy `opentypeless.db` from the old app data directory and rename it to `talkwithyourai.db`; the dictionary can also be exported as JSON / CSV and re-imported.
+- Window preferences: `onboarding_completed` in `settings.json` decides whether onboarding runs again, so copying only the database means you will be walked through it once.
+- API keys: re-enter them in the new app's settings.
 
-- [ ] Usage summary UI for aggregate audio time and word counts
-- [ ] More provider-specific setup diagnostics
-- [ ] Better Linux desktop-environment guidance
-- [ ] More workflow presets for writing, coding, and support replies
-- [ ] Plugin-style provider extensions
-- [x] A release pipeline for this repository (`.github/workflows/release.yml`, three platforms)
+### 6. Roadmap
 
-## FAQ
+- [X] Global hotkey recording and capsule state display
+- [X] Character-by-character keyboard output with clipboard fallback
+- [X] Ten-way app-context classification and per-app styling
+- [X] Built-in polish styles and custom style prompts
+- [X] Local dictionary, correction rules, scenes and app mappings
+- [X] Dictionary JSON / CSV import-export, scene JSON import-export
+- [X] History with retention policy
+- [X] Ask Anything voice Q&A
+- [X] Translation mode and selected-text handling
+- [X] Terminal newline continuation
+- [X] Automatic bullet formatting for long input
+- [X] Context-aware typo correction
+- [X] Retry-or-insert prompt on polish failure
+- [X] Cancel-dictation shortcut
+- [X] Developer terminology correction (450+ terms)
+- [X] Dual-architecture installers for three platforms with dual-digest checksums
+- [X] Fully local operation: no account, no backend, no telemetry
+- [X] Update notice from GitHub Releases
+- [ ] Signed auto-update (requires a Developer ID certificate and notarization, see below)
 
-**Is my audio sent anywhere besides my provider?**
-Audio goes directly from your machine to the STT provider (or local endpoint) you configured. Nothing passes through any server operated by this project — the app has no backend at all.
+### 7. Notes
 
-**Can I use it offline?**
-With a local Whisper-compatible STT endpoint and a local OpenAI-compatible LLM such as Ollama, the app can run without any network connection.
+#### On auto-update
 
-**Which languages are supported?**
-STT supports 99+ languages depending on the provider. AI polish and translation support 20+ target languages.
+This app **does not ship a signed auto-updater**.
 
-**Is the app free?**
-Yes. The app is fully functional with your own API keys. There is no paid tier, subscription, or account.
+Two reasons: the macOS build is ad-hoc signed and not notarized, so there is no stable code identity to bind an update to; and there is no maintainer signing key, so an update payload could not be verified.
 
-**Do I need to sign in?**
-No. There is no account system. The first launch takes you straight to provider configuration.
+Instead the app queries the public GitHub Releases API at startup, and when a newer version exists it shows a notice linking to the release page. You download and install it yourself. Nothing is downloaded or executed automatically.
 
-## Community
+A signed auto-updater would first require a real Developer ID certificate and notarization; only then would a minisign key pair be meaningful.
 
-- 🐛 [Issue Tracker](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/issues) — Bug reports and feature requests
-- 📖 [Contributing Guide](CONTRIBUTING.md) — Development setup and guidelines
-- 🔒 [Security Policy](SECURITY.md) — Report vulnerabilities responsibly
-- 🧭 [Vision](VISION.md) — Project principles and roadmap direction
+#### On licensing
 
-## Contributing
+This project is derived from [tover0314-w/opentypeless](https://github.com/tover0314-w/opentypeless) under the MIT license. The original copyright notices are retained in `LICENSE` and `THIRD_PARTY_NOTICES.md`.
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup and guidelines.
+### 8. Previous versions
 
-## Built With
-
-- [Tauri](https://tauri.app/) for the desktop shell
-- [React](https://react.dev/) and [TypeScript](https://www.typescriptlang.org/) for the UI
-- [Rust](https://www.rust-lang.org/) for audio capture, providers, hotkeys, output, and local storage
-- [i18next](https://www.i18next.com/) for multilingual UI
-
-## License
-
-[MIT](LICENSE). The original copyright notice of the upstream project this fork is based on is retained in `LICENSE` and `THIRD_PARTY_NOTICES.md` as required by the MIT license.
+- https://github.com/tover0314-w/opentypeless

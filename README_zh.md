@@ -1,319 +1,221 @@
-<p align="center">
-  <img src="src-tauri/icons/128x128@2x.png" width="128" height="128" alt="TalkWithYourAI Logo" />
-</p>
+<div align=center>
+<img src="src-tauri/icons/128x128@2x.png" style="width:100px;" width="100"/>
+<h2>TalkWithYourAI</h2>
+</div>
 
-<h1 align="center">TalkWithYourAI</h1>
+### 一、产品概述
 
-<p align="center">
-  开源版 Wispr Flow / Superwhisper：面向 macOS、Windows 和 Linux 的 AI 语音输入、改写和语音问答工具。
-</p>
+- 轻量级的桌面语音输入工具：按下热键说话，松开就得到整理好的文字，直接落在你正在用的那个应用里。
+- 完全本地运行：没有账号、没有后端服务、没有授权校验、没有遥测。语音识别与 AI 润色只走你自己配置的服务商。
+- 自带 key 即可用：STT 与 AI 润色都支持自己填 Key，也可以填自己的 Base URL 指向自建服务或本机模型。
+- 支持 macOS、Windows、Linux 三平台，macOS 与 Windows 均提供双架构安装包。
 
-<p align="center">
-  无论你在写邮件、写代码、聊天还是做笔记 — 只需按下热键，<br/>
-  说出你的想法，TalkWithYourAI 会用 AI 转录并润色你的语音，<br/>
-  然后直接输入到你正在使用的任何应用中。
-</p>
+核心价值：
 
-<p align="center">
-  <a href="https://github.com/Mutantcat-Working-Group/TalkWithYourAI/actions/workflows/ci.yml"><img src="https://github.com/Mutantcat-Working-Group/TalkWithYourAI/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/Mutantcat-Working-Group/TalkWithYourAI" alt="License" /></a>
-</p>
+- 说人话，出书面语。自动去掉「呃、嗯、就是、然后」这类思考时的口头语，补标点，整理成能直接发出去的句子。
+- 认得你在哪说话。识别当前应用是邮件、群聊、文档、代码编辑器还是终端，按场合调整语气和排版。
+- 认得你在说什么。内置四百余条开发术语修正，`code x` 自动变 `Codex`，`min io` 变 `MinIO`。
+- 一次配置，长期使用。所有数据只存在本机 SQLite，换不换 key 由你决定。
 
-<p align="center">
-  <strong>任意应用听写</strong> · <strong>改写选中文本</strong> · <strong>语音 Ask 一次性问答</strong> · <strong>自备 API 密钥</strong>
-</p>
+### 二、功能说明
 
-> **Fork 说明：** TalkWithYourAI 基于 [tover0314-w/opentypeless](https://github.com/tover0314-w/opentypeless)（MIT 许可）修改而来。本分支只做本地运行：账号、订阅和托管云端这一整层已被移除，应用无需登录、不依赖任何后端服务，语音识别与 AI 润色只使用你自己配置的 API 密钥。原版权声明保留在 `LICENSE` 与 `THIRD_PARTY_NOTICES.md` 中。
->
-> 上游的多语言 README（日语、韩语、西班牙语、法语、德语、葡萄牙语、俄语、阿拉伯语、印地语、意大利语、土耳其语、越南语、泰语、印尼语、波兰语、荷兰语）已随上游内容一并删除。本仓库此后只维护本文件与 [README.md](README.md) 两份。
+#### 语音输入
 
-## 产品亮点
+- 全局热键录音，按住说话或按一下开始/停止，两种模式可选。
+- 悬浮胶囊实时显示录音、转写、润色、输出四个阶段的状态。
+- 文字通过键盘模拟逐字输入，或走剪贴板粘贴；两者都可作为回退。
+- 录音时长上限按所选服务商自动设置，也可手动指定。
 
-- **应用感知写作**会在本地识别当前应用，并针对邮件、聊天、文档、Issue 跟踪、开发工具等场景调整结构和语气。
-- **语音意图路由**可区分普通听写、选中文本编辑、翻译、Ask Anything 和受支持的语音操作，并支持简体中文、繁体中文和英文。
-- **每个工作流支持多个快捷键**，可为听写、Ask Anything 和翻译分别添加和排序多个按键组合。
-- **可切换翻译目标语言**，无需始终固定为同一种输出语言。
-- **更完整的本地词典**支持纠错规则以及词典导入导出。
-- **按应用设置写作风格**，可覆盖内置应用分类，为特定应用指定其他写作场景。
+#### AI 润色
 
-应用识别、映射、词典、纠错规则、历史记录和场景都保存在本机 SQLite 中。应用感知润色只会向配置的 LLM 发送内部应用分类和经过审核的风格元数据；原始窗口标题和文档内容不会作为应用上下文发送，也不会写入历史记录。
+- 语音识别结果经过 LLM 整理：补标点、去口头语、合并重复、修正自相矛盾的更正。
+- 支持 Minimal / Clean / Structured / Professional 四种内置润色风格，也可写自己的风格提示词。
+- 长内容（约 120 汉字或 45 词以上）且包含多个要点时，自动整理成分点列表。
+- 按语境修正错别字：编程界面上 `函树` 会改成 `函数`，邮件里按商务词汇判断。
+- 润色失败时不会静默降级，而是问你「重新生成」还是「直接插入原文」，可以无限次重试。
 
+#### 应用感知
 
----
+- 自动识别前台应用，归入邮件、工作群聊、私人聊天、文档、项目管理、开发协作、代码/提示词、客服、社交、终端十类语境。
+- 每个应用家族可指定不同的写作风格，具体应用还能单独覆盖。
+- 所有识别与映射都在本地完成；发往 LLM 的只有内部类别标签，不包含窗口标题或文档内容。
 
-## Ask Anything
+#### 终端适配
 
-Ask Anything 不是聊天页，也不是另一个输入框。它是一个快捷键优先的语音问答流程：按下 Ask 热键，说出问题，停止录音后，TalkWithYourAI 会先转写问题，再调用 LLM，最后只把答案显示在一个小便签里。
+- 识别终端类应用（Terminal、iTerm2、Warp、Ghostty、Alacritty、kitty、WezTerm、AntShell、Windows Terminal、PowerShell 等）。
+- 在终端里，换行输出为 `\` 加回车（shell 续行），不会把命令提前提交。
+- 非终端应用不受影响，普通文字该换行就换行。
 
-它适合临时问一句、快速查一句、让 AI 根据当前选中文本解释/总结/改写一句。默认没有聊天历史、没有输入框、没有额外发送按钮，结果可以直接复制。
+#### Ask Anything
 
-默认热键对齐 Typeless 风格：
+- 单独热键唤起，说一个问题，只显示答案，没有聊天记录、没有输入框、没有发送按钮。
+- 选中文本时也可以问「这段话什么意思」「帮我总结一下」。
 
-| 平台 | 听写 | Ask Anything | 翻译选中文本 |
-|---|---|---|---|
-| macOS | `Fn` | `Fn+Space` | `Fn+LeftShift` |
-| Windows | `Right Alt` | `Right Alt+Space` | `Right Alt+LeftShift` |
-| Linux | `Ctrl+/` | `Ctrl+.` | 可配置 |
+#### 本地数据
 
-Linux 暂时保持 `Ctrl+/` 和 `Ctrl+.` 作为默认热键，因为不同桌面环境，尤其是 Wayland 下，全局 `Right Alt` 监听不如 Windows 稳定。
+- 历史记录、词典、纠错规则、场景、应用映射全部存在本机 SQLite，支持全文搜索与按日期分组。
+- 词典支持 JSON / CSV 导入导出，场景支持 JSON 导入导出。
+- API Key 存在操作系统凭据库（macOS 钥匙串、Windows 凭据管理器、Linux Secret Service），不可用时回退到本地加密存储。
 
-## 为什么选择 TalkWithYourAI？
+#### 服务商支持
 
-| | TalkWithYourAI | macOS 听写 | Windows 语音输入 | Whisper Desktop |
-|---|---|---|---|---|
-| AI 文本润色 | ✅ 多种 LLM | ❌ | ❌ | ❌ |
-| Ask Anything 语音问答 | ✅ | ❌ | ❌ | ❌ |
-| STT 服务商选择 | ✅ Deepgram、AssemblyAI、Whisper 兼容、Doubao、Apple Speech 等 | ❌ 仅 Apple | ❌ 仅 Microsoft | ❌ 仅 Whisper |
-| 适用于任意应用 | ✅ | ✅ | ✅ | ❌ 需复制粘贴 |
-| 翻译模式 | ✅ | ❌ | ❌ | ❌ |
-| 选中文本改写 | ✅ | ❌ | ❌ | ❌ |
-| 应用感知写作 | ✅ 本地识别与映射 | ❌ | ❌ | ❌ |
-| 多快捷键 | ✅ 按工作流分别配置 | ❌ | ❌ | ❌ |
-| 无需账号 | ✅ | ✅ | ✅ | ✅ |
-| 开源 | ✅ MIT | ❌ | ❌ | ✅ |
-| 跨平台 | ✅ Win/Mac/Linux | ❌ 仅 Mac | ❌ 仅 Windows | ✅ |
-| 自定义词典 | ✅ | ❌ | ❌ | ❌ |
-| 自备密钥 | ✅ BYOK | ❌ | ❌ | ✅ |
+语音识别：
 
-## 功能特性
+```text
+服务商                        说明
+Deepgram Nova-3              流式识别
+AssemblyAI                   流式识别
+阿里云 Qwen3 实时语音识别      流式识别，支持指定地域
+火山引擎豆包实时语音识别        流式识别
+智谱 GLM-ASR                 文件上传
+OpenAI Whisper               文件上传
+Groq Whisper                 文件上传
+硅基流动 SiliconFlow           文件上传
+Apple Speech                 本地识别，仅 macOS
+本地 / 自定义 Whisper         自填 Base URL 与模型，Key 可留空
+```
 
-- 🎙️ 默认对齐 Typeless 风格热键：macOS `Fn`，Windows `Right Alt`，Linux `Ctrl+/`
-- ❓ 独立 Ask Anything 热键：macOS `Fn+Space`，Windows `Right Alt+Space`，Linux `Ctrl+.`
-- 💊 浮动胶囊显示准备、录音、转写、润色、Ask thinking 等状态，空闲时可自动隐藏
-- 🗣️ 接入 6+ 语音识别服务商，并支持 macOS Apple Speech 与自托管 Whisper 兼容端点
-- 🤖 多种大模型润色文本：OpenAI、DeepSeek、Claude、Gemini、Ollama 等
-- ✨ 润色风格：轻改、清爽、结构化、专业
-- ⚡ 流式输出，边生成边打字
-- ⌨️ 支持键盘模拟、剪贴板粘贴/仅复制、Windows SendInput 和输出失败诊断
-- 📝 Ask/润色可读取选中文本，用来提问、总结、改写或翻译
-- 🌐 翻译模式：说中文，输出英文（或其他 20+ 语言）
-- 📖 自定义词典和本地纠错规则，提升专业术语与常见错词处理
-- 🧩 内置场景、本地自定义场景、导入导出和激活状态
-- 🔐 API 密钥优先存入系统密钥库，尽量避免明文保存在配置里
-- 🔍 自动识别当前应用，适配不同场景
-- 📜 本地历史记录，支持全文搜索
-- 🌗 深色 / 浅色 / 跟随系统主题
-- 🚀 开机自启
+AI 润色：
 
-> 界面本地化目前以英文和中文最完整；其他语言包已覆盖 key，但部分新功能和高级设置仍可能回退显示英文。
+```text
+服务商                        说明
+智谱
+DeepSeek
+硅基流动 SiliconFlow
+OpenAI
+Google Gemini
+Moonshot (Kimi)
+豆包（火山引擎）
+通义千问
+Groq
+Claude                       原生 Messages API
+Ollama                       本地，免 Key
+OpenRouter
+自定义 OpenAI 兼容端点         自填 Base URL 与模型，Key 可留空
+```
 
-> [!TIP]
-> **推荐配置（开箱即用最佳体验）**
->
-> | | 服务商 | 模型 |
-> |---|---|---|
-> | 🗣️ 语音识别 | Groq | `whisper-large-v3-turbo` |
-> | 🤖 AI 润色 | Google | `gemini-2.5-flash` |
->
-> 这套组合转录速度快、准确率高，文本润色质量出色，而且两者都提供慷慨的免费额度。
+### 三、下载与安装
 
-## 下载安装
+从 [Releases](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases) 下载对应平台的安装包：
 
-下载适用于你平台的最新版本：
+```text
+平台      架构            文件
+macOS     arm64 + x86_64   TalkWithYourAI_<版本>_universal.dmg
+Windows   x64             TalkWithYourAI_<版本>_x64-setup.exe
+Windows   arm64           TalkWithYourAI_<版本>_arm64-setup.exe
+Linux     amd64           TalkWithYourAI_<版本>_amd64.deb
+Linux     arm64           TalkWithYourAI_<版本>_arm64.deb
+Linux     amd64           TalkWithYourAI_<版本>_amd64.AppImage
+```
 
-**[下载最新正式版](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases/latest)**
+每个安装包都配有一份同名校验文件 `<文件名>.checksums.txt`，内含 MD5 与 SHA-1 两种摘要；另有 `MD5SUMS` 与 `SHA1SUMS` 汇总文件，可直接用 `md5sum -c` / `sha1sum -c` 校验。
 
-| 平台 | 文件 |
-|------|------|
-| Windows | NSIS `.exe` 安装程序 |
-| macOS | Apple Silicon 和 Intel 通用 `.dmg` |
-| Linux | `.AppImage` / `.deb` |
+macOS 安装包为 ad-hoc 签名，未做公证，首次启动会被 Gatekeeper 拦截。右键应用选择「打开」，或执行：
 
-版本号采用日期式格式：`1.0.YYYYMMDD`（例如 `1.0.20261121`）。
-
-## 安装说明
-
-发布包由 [`.github/workflows/release.yml`](.github/workflows/release.yml) 生成。请始终从本仓库的 [GitHub Releases](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/releases) 下载。
-
-macOS 构建为 **ad-hoc 签名**，既不是 Developer ID 签名，也没有经过公证，Gatekeeper 仍会在首次启动时拦截 —— 右键应用选择**打开**，或执行：
-
-```bash
+```sh
 xattr -dr com.apple.quarantine /Applications/TalkWithYourAI.app
 ```
 
-**不提供签名自动更新。** macOS 构建为 ad-hoc 签名，本项目也没有维护者签名密钥，更新包无法被验证。应用改为查询公开的 GitHub Releases API，发现新版本后给出提示并链接到发布页，由你自己下载安装。应用不会自动下载或执行任何东西。
+Windows 安装包未做代码签名，SmartScreen 可能提示「Windows 已保护你的电脑」，点击「更多信息」后选择「仍要运行」。
 
-### Windows
+### 四、快速上手
 
-如果 Windows SmartScreen 提示“Windows 已保护你的电脑”：
+#### 默认热键
 
-1. 点击 **更多信息**
-2. 点击 **仍要运行**
-
-如果安装包出现发布者验证提示：
-
-1. 右键 `.msi` 文件，选择 **属性**
-2. 勾选底部的 **解除锁定**，点击 **应用**
-3. 重新运行安装包
-
-### macOS
-
-macOS 构建为 ad-hoc 签名，首次启动会被 Gatekeeper 拦截。右键应用选择**打开**，或执行：
-
-```bash
-xattr -dr com.apple.quarantine /Applications/TalkWithYourAI.app
+```text
+平台            听写           语音提问        翻译选中文本
+macOS          Fn            Fn+Space       Fn+LeftShift
+Windows        Right Alt     Right Alt+Space Right Alt+LeftShift
+Linux          Ctrl+/        Ctrl+.         可在设置中配置
 ```
 
-然后正常打开应用。
+取消当前听写（含等待润色重试时的询问）：macOS 为 `Cmd+Escape`，Windows 与 Linux 为 `Ctrl+Escape`。
 
-### Linux
+#### 首次配置
 
-**Ubuntu/Debian** 安装 `.deb`：
+1. 打开应用，跟随引导页选择语音识别服务商并填入 Key（或用本地 Whisper 填 Base URL）。
+2. 选择 AI 润色服务商并填入 Key（Ollama 或自定义端点可留空）。
+3. 引导页会要求两个连接测试都通过后才能继续。
+4. 授予麦克风权限；macOS 还需要在「隐私与安全性 → 辅助功能」中勾选本应用，否则全局热键与键盘输出无法工作。
+5. 完成后按热键即可开始使用。
 
-```bash
-sudo apt install ./TalkWithYourAI_1.0.20261121_amd64.deb
-```
+#### 注意事项
 
-**AppImage** 直接运行：
+- 首次启动不需要注册、登录或联网校验。
+- 若只配置了语音识别而关闭了 AI 润色，输出的是带标点的原始转写。
+- Ollama、自定义 OpenAI 兼容端点可以不填 Key，只要 Base URL 与模型填对即可。
+- 自建的 OpenAI 兼容服务支持 `http://`，`localhost`、`127.0.0.1` 与内网地址都不受限。
 
-```bash
-chmod +x TalkWithYourAI_1.0.20261121_amd64.AppImage
-./TalkWithYourAI_1.0.20261121_amd64.AppImage
-```
+#### 演示
 
-**NVIDIA + Wayland 用户：**应用会自动识别并应用兼容处理。如果仍然启动崩溃，可以尝试：
-
-```bash
-WEBKIT_DISABLE_DMABUF_RENDERER=1 ./TalkWithYourAI
-```
-
-Linux 兼容开关也可以用以下环境变量强制开启。优先读取 `TALKWITHYOURAI_*` 新名称；旧的 `OPENTYPELESS_*` 名称仍作为上游兼容别名继续生效：
-
-| 首选名称 | 兼容别名 |
-| --- | --- |
-| `TALKWITHYOURAI_DISABLE_WEBKIT_DMABUF` | `OPENTYPELESS_DISABLE_WEBKIT_DMABUF` |
-| `TALKWITHYOURAI_DISABLE_WEBKIT_COMPOSITING` | `OPENTYPELESS_DISABLE_WEBKIT_COMPOSITING` |
-| `TALKWITHYOURAI_FORCE_GDK_X11` | `OPENTYPELESS_FORCE_GDK_X11` |
-| `TALKWITHYOURAI_FORCE_SOFTWARE_GL` | `OPENTYPELESS_FORCE_SOFTWARE_GL` |
-
-**Wayland 用户：**安装 `wtype` 后，TalkWithYourAI 可以把结果直接输入当前应用。Ubuntu/Debian 使用 `sudo apt install wtype`，Arch/Manjaro 使用 `sudo pacman -S wtype`。全局热键仍可能受桌面环境限制；如果未安装 `wtype`，TalkWithYourAI 会退回为复制结果到剪贴板。
-
-## 前置要求
-
-- [Node.js](https://nodejs.org/) 20+
-- [Rust](https://rustup.rs/)（stable 工具链）
-- Tauri 平台依赖：参见 [Tauri 前置要求](https://v2.tauri.app/start/prerequisites/)
-
-## 快速开始
-
-```bash
-# 安装依赖
+```sh
+# 从源码运行（开发模式）
 npm install
-
-# 开发模式运行
 npm run tauri dev
 
-# 构建生产版本
+# 构建本机安装包
 npm run tauri build
 ```
 
 构建产物位于 `src-tauri/target/release/bundle/`。
 
-## 配置
+### 五、配置与数据
 
-所有设置均可在应用内的设置面板中访问：
+#### 数据位置
 
-- **语音识别** — 选择 STT 服务商并输入 API 密钥、base URL 和模型
-- **AI 润色** — 选择 LLM 服务商、模型、API 密钥、润色风格、自定义提示词、翻译和选中文本上下文
-- **通用** — 听写热键、Ask 热键、输出模式、开机自启和胶囊空闲隐藏
-- **词典** — 添加自定义术语和本地纠错规则
-- **场景** — 内置/本地提示词模板，支持导入导出
-- **关于** — 版本号、仓库地址和许可信息
-
-API 密钥会优先存入系统密钥库，不支持时使用本地 fallback。密钥不会发送到本项目的任何服务器 — 所有 STT/LLM 请求都直接从你的机器发送到你配置的服务商。
-
-### 仅本地运行
-
-TalkWithYourAI 没有账号、没有订阅、也没有托管云端。一切都在你的机器上运行：
-
-1. 在设置中选择任意 STT 和 LLM 服务商
-2. 输入你自己的 API 密钥（或指向本地端点，例如 Ollama 或自建 Whisper 服务）
-3. 完成 — 历史记录、词典、纠错规则、场景和应用映射都保存在本机 SQLite 中，除了你选择的服务商之外不会发出任何请求
-
-如果想完全不联网运行，可以配合本地 Whisper 兼容 STT 端点和本地 OpenAI 兼容 LLM（如 Ollama）使用。
-
-## 从旧安装迁移
-
-bundle identifier、产品名、keyring 服务名和数据库文件名都已变更，因此本应用与本分支所基于的旧版本是两个独立的应用。数据不会自动继承，两者可以同时安装、互不干扰。
-
-迁移方式：
-
-- **历史 / 词典 / 场景**：把旧应用数据目录中的 SQLite 文件复制到新应用数据目录，并改名为新数据库文件名（`talkwithyourai.db`）。词典和场景也可以在应用内导出后重新导入。
-- **设置**：`tauri-plugin-store` 的 `settings.json` 同样位于应用数据目录，里面存有应用配置、窗口位置和 `onboarding_completed` 标记。建议一并复制，否则需要重新走一遍引导页并丢失窗口位置。
-- **API 密钥**：密钥保存在系统密钥库中，服务名已变更，因此不会自动跟随。请在新应用里重新填写。
-
-## 架构
-
-**桌面端 Pipeline：**
-
-```mermaid
-flowchart TB
-  UI["React + TypeScript UI"] --> Tauri["Tauri commands"]
-  Hotkeys["全局热键"] --> Tauri
-  Tauri --> Audio["Rust 音频采集"]
-  Audio --> Providers["STT 服务商"]
-  Providers --> Pipeline["Pipeline 编排"]
-  Pipeline --> LLMs["LLM 服务商"]
-  Pipeline --> Storage["SQLite 历史记录 + 词典"]
-  Pipeline --> Output["键盘 / 剪贴板输出"]
-  Updater["更新提示"] --> UI
+```text
+内容                     位置
+历史 / 词典 / 纠错 / 场景   应用数据目录下的 talkwithyourai.db
+窗口位置等偏好设置         应用数据目录下的 settings.json
+API Key                  操作系统凭据库，服务名为 TalkWithYourAI
 ```
 
-```
-src/                  # React 前端（TypeScript）
-├── components/       # UI 组件（Settings、History、Capsule 等）
-├── hooks/            # React hooks（录音、主题、Tauri 事件）
-├── lib/              # 工具库（服务商客户端、路由、常量）
-└── stores/           # Zustand 状态管理
+#### 从旧版本迁移
 
-src-tauri/src/        # Rust 后端
-├── audio/            # 音频采集（cpal）
-├── stt/              # STT 服务商（Deepgram、AssemblyAI、Whisper 兼容、Apple Speech）
-├── llm/              # LLM 服务商（OpenAI 兼容与原生接口）
-├── output/           # 文本输出（键盘模拟、剪贴板粘贴）
-├── storage/          # 配置（tauri-plugin-store）+ 历史/词典（SQLite）
-├── app_detector/     # 检测当前活动应用
-├── pipeline.rs       # 录音 → STT → LLM → 输出 编排
-└── lib.rs            # Tauri 应用设置、命令、热键处理
-```
+本应用的标识符、凭据库服务名与数据库文件名与上游 OpenTypeless 均不相同，两者是互相独立的两个应用，可以同时安装、互不干扰。因此旧数据不会自动继承：
 
-## 路线图
+- 历史 / 词典 / 场景：可把旧应用数据目录下的 `opentypeless.db` 复制并改名为 `talkwithyourai.db`；词典也可以用 JSON / CSV 导出后重新导入。
+- 窗口偏好：`settings.json` 里的 `onboarding_completed` 决定是否重新走引导页，只复制数据库的话会重新引导。
+- API Key：需要在新应用设置页重新填写。
 
-- [ ] 用量统计 UI：汇总音频时长和字数消耗
-- [ ] 更细的服务商配置诊断
-- [ ] 更清晰的 Linux 桌面环境兼容说明
-- [ ] 更多工作流预设：写作、代码、客服回复等
-- [ ] 插件式服务商扩展
-- [x] 本仓库的发版流水线（`.github/workflows/release.yml`，三平台）
+### 六、开发进度
 
-## 常见问题
+- [X] 全局热键录音与胶囊状态显示
+- [X] 逐字键盘输出与剪贴板回退
+- [X] 十类应用语境识别与按应用调整风格
+- [X] 内置润色风格与自定义风格提示词
+- [X] 本地词典、纠错规则、场景与应用映射
+- [X] 词典 JSON / CSV 导入导出，场景 JSON 导入导出
+- [X] 历史记录与保留策略
+- [X] Ask Anything 语音问答
+- [X] 翻译模式与选中文本处理
+- [X] 终端应用换行续行适配
+- [X] 长内容自动分点
+- [X] 按语境修正同音字与形近字
+- [X] 润色失败询问重试或直接插入
+- [X] 取消听写快捷键
+- [X] 开发术语修正（四百余条）
+- [X] 三平台双架构安装包与双摘要校验
+- [X] 完全本地运行，无账号无后端无遥测
+- [X] 检查 GitHub Releases 并提示新版本
+- [ ] 签名自动更新（需 Developer ID 证书与公证，见下）
 
-**我的音频会被发到服务商以外的地方吗？**
-音频直接从你的机器发送到你配置的 STT 服务商或本地端点，不经过本项目运营的任何服务器 — 应用本身不含任何后端。
+### 七、说明
 
-**可以离线使用吗？**
-配合本地 Whisper 兼容 STT 端点和本地 OpenAI 兼容 LLM（如 Ollama），应用可以完全不联网工作。
+#### 关于自动更新
 
-**支持哪些语言？**
-STT 根据服务商不同支持 99+ 种语言。AI 润色和翻译支持 20+ 种目标语言。
+本应用**不提供签名自动更新**。
 
-**应用免费吗？**
-是的。使用自己的 API 密钥即可完整使用所有功能，没有付费档位、订阅或账号。
+原因有二：macOS 构建为 ad-hoc 签名且未公证，没有稳定的代码身份可用于绑定更新；本项目也没有维护者签名密钥，无法验证更新包的真伪。
 
-**需要登录吗？**
-不需要。应用没有账号系统，首次启动直接进入服务商配置流程。
+替代方案是：应用启动时查询公开的 GitHub Releases 接口，发现新版本后给出提示并链接到发布页，由你自己下载安装。应用不会自动下载或执行任何东西。
 
-## 社区
+若将来要做签名自动更新，前置条件是先拿到真正的 Developer ID 证书并完成公证，之后 minisign 密钥对才有意义。
 
-- 🐛 [Issue Tracker](https://github.com/Mutantcat-Working-Group/TalkWithYourAI/issues) — Bug 报告和功能请求
-- 📖 [贡献指南](CONTRIBUTING.md) — 开发环境搭建和贡献规范
-- 🔒 [安全策略](SECURITY.md) — 负责任地报告漏洞
-- 🧭 [愿景](VISION.md) — 项目原则和路线图方向
+#### 关于许可
 
-## 贡献
+本项目基于 [tover0314-w/opentypeless](https://github.com/tover0314-w/opentypeless)（MIT 许可）修改而来，原版权声明保留在 `LICENSE` 与 `THIRD_PARTY_NOTICES.md` 中。
 
-欢迎贡献！请参阅 [CONTRIBUTING.md](CONTRIBUTING.md) 了解开发设置和指南。
+### 八、历史版本
 
-## 许可证
-
-[MIT](LICENSE)。按 MIT 许可要求，本项目所基于的上游项目的原版权声明保留在 `LICENSE` 与 `THIRD_PARTY_NOTICES.md` 中。
+- https://github.com/tover0314-w/opentypeless
